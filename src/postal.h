@@ -15,9 +15,7 @@ public:
 
     typedef std::map< std::string, std::string > ParseResult;
 
-    bool parse(const std::string &input, std::vector< ParseResult > &parsed);
-
-    bool parse(const std::string &input, std::vector< std::vector<std::string> > &parsed);
+    bool parse(const std::string &input, std::vector< ParseResult > &parsed, Postal::ParseResult &nonormalization);
 
     static void result2hierarchy(const std::vector< ParseResult > &pr, std::vector< std::vector<std::string> > &h);
 

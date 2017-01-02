@@ -20,6 +20,7 @@ void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
     result.clear();
     m_min_missing_levels = -1;
 
+    std::cout << "Search hierarchies:\n";
     for (const auto &r: parsed_result)
     {
         for (auto a: r)
