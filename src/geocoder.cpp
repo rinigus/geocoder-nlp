@@ -6,9 +6,9 @@
 
 using namespace GeoNLP;
 
-Geocoder::Geocoder()
+Geocoder::Geocoder(const char *fname)
 {
-    m_db.connect("../map/estonia/location.sqlite", SQLITE_OPEN_READONLY);
+    m_db.connect(fname, SQLITE_OPEN_READONLY);
 }
 
 void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)

@@ -24,7 +24,7 @@ public:
     };
 
 public:
-    Geocoder();
+    Geocoder(const char *fname);
 
     void search(const std::vector< Postal::ParseResult > &parsed_query, std::vector<GeoResult> &result);
 

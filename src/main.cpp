@@ -9,12 +9,19 @@ using namespace GeoNLP;
 int main(int argc, char *argv[])
 {
     Postal postal;
-    if (argc < 2) return -1;
+    if (argc < 3)
+    {
+        std::cout << "Use: " << argv[0] << " sqlite.dbase address\n"
+                  << "where\n"
+                  << " sqlite.dbase - path to SQLite database\n"
+                  << " address - address to be parsed (please enclose it in \" \" to ensure that its a singe argument\n";
+        return -1;
+    }
 
     std::vector< Postal::ParseResult > parsed_query;
     Postal::ParseResult nonorm;
 
-    postal.parse(argv[1], parsed_query, nonorm);
+    postal.parse(argv[2], parsed_query, nonorm);
 
     std::cout << "Address parsing before normalization:\n";
     for (auto v: nonorm)
@@ -29,7 +36,7 @@ int main(int argc, char *argv[])
         std::cout << "\n";
     }
 
-    Geocoder geo;
+    Geocoder geo(argv[1]);
     std::vector<Geocoder::GeoResult> result;
 
     geo.search(parsed_query, result);
