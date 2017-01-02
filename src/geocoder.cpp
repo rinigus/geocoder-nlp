@@ -6,9 +6,25 @@
 
 using namespace GeoNLP;
 
-Geocoder::Geocoder(const char *fname)
+Geocoder::Geocoder()
 {
-    m_db.connect(fname, SQLITE_OPEN_READONLY);
+
+}
+
+Geocoder::Geocoder(const std::string &dbname)
+{
+    if ( !load(dbname) )
+        std::cerr << "Geocoder: error loading " << dbname << std::endl;
+}
+
+bool Geocoder::load(const std::string &dbname)
+{
+    return (m_db.connect(dbname.c_str(), SQLITE_OPEN_READONLY) == SQLITE_OK);
+}
+
+void Geocoder::drop()
+{
+    m_db.disconnect();
 }
 
 void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)
@@ -33,7 +49,7 @@ void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
     // fill the data
     for (GeoResult &r: result)
     {
-        get_name(r.id, r.title, r.address, 2);
+        get_name(r.id, r.title, r.address, m_levels_in_title);
 
         sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
         qry.bind(1, r.id);
