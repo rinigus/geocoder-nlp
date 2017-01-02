@@ -23,12 +23,12 @@ int main(int argc, char *argv[])
 
     postal.parse(argv[2], parsed_query, nonorm);
 
-    std::cout << "Address parsing before normalization:\n";
+    std::cout << "\nAddress parsing before full normalization:\n\n";
     for (auto v: nonorm)
         std::cout << v.first << " " << v.second << "\n";
     std::cout << "\n";
 
-    std::cout << "Normalization:\n";
+    std::cout << "Normalization:\n\n";
     for (auto r: parsed_query)
     {
         for (auto v: r)

@@ -2,6 +2,8 @@
 
 #include <libpostal/libpostal.h>
 
+#include <iostream>
+
 using namespace GeoNLP;
 
 Postal::Postal()
@@ -91,8 +93,8 @@ struct Digits {
 typedef std::vector<Digits> Vd;
 
 static void cart_product(
-    Vvi& out,
-    Vvi& in)
+        Vvi& out,
+        Vvi& in)
 
 {
     Vd vd;
