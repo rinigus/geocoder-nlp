@@ -6,6 +6,17 @@
 
 using namespace GeoNLP;
 
+#define ADDRESS_PARSER_LABEL_HOUSE "house"
+#define ADDRESS_PARSER_LABEL_HOUSE_NUMBER "house_number"
+#define ADDRESS_PARSER_LABEL_ROAD "road"
+#define ADDRESS_PARSER_LABEL_SUBURB "suburb"
+#define ADDRESS_PARSER_LABEL_CITY_DISTRICT "city_district"
+#define ADDRESS_PARSER_LABEL_CITY "city"
+#define ADDRESS_PARSER_LABEL_STATE_DISTRICT  "state_district"
+#define ADDRESS_PARSER_LABEL_STATE  "state"
+#define ADDRESS_PARSER_LABEL_POSTAL_CODE  "postal_code"
+#define ADDRESS_PARSER_LABEL_COUNTRY  "country"
+
 Postal::Postal()
 {
 
@@ -208,17 +219,6 @@ void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<std
     {
         std::vector<std::string> h_result;
 #define ADDIFHAS(k) { ParseResult::const_iterator it = r.find(k); if (it != r.end()) h_result.push_back(it->second); }
-
-#define ADDRESS_PARSER_LABEL_HOUSE "house"
-#define ADDRESS_PARSER_LABEL_HOUSE_NUMBER "house_number"
-#define ADDRESS_PARSER_LABEL_ROAD "road"
-#define ADDRESS_PARSER_LABEL_SUBURB "suburb"
-#define ADDRESS_PARSER_LABEL_CITY_DISTRICT "city_district"
-#define ADDRESS_PARSER_LABEL_CITY "city"
-#define ADDRESS_PARSER_LABEL_STATE_DISTRICT  "state_district"
-#define ADDRESS_PARSER_LABEL_STATE  "state"
-#define ADDRESS_PARSER_LABEL_POSTAL_CODE  "postal_code"
-#define ADDRESS_PARSER_LABEL_COUNTRY  "country"
 
         ADDIFHAS(ADDRESS_PARSER_LABEL_COUNTRY);
         ADDIFHAS(ADDRESS_PARSER_LABEL_STATE);

@@ -19,6 +19,8 @@ public:
 
     static void result2hierarchy(const std::vector< ParseResult > &pr, std::vector< std::vector<std::string> > &h);
 
+    void set_initialize_every_call(bool v) { m_initialize_for_every_call = v; }
+
 protected:
     bool init();
     void drop();
