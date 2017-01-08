@@ -43,6 +43,7 @@ void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
             std::cout << a << " / ";
         std::cout << "\n\n";
 
+        m_query_count = 0;
         search(r, result);
     }
 
@@ -65,14 +66,17 @@ void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
 bool Geocoder::search(const std::vector<std::string> &parsed, std::vector<Geocoder::GeoResult> &result, size_t level,
                       long long int range0, long long int range1)
 {
-    if ( level >= parsed.size() )
+    if ( level >= parsed.size() || (m_max_queries_per_hierarchy>0 && m_query_count > m_max_queries_per_hierarchy) )
         return false;
+
+    m_query_count++;
 
     std::string extra;
     if (level > 0)
         extra = "AND prim_id>? AND prim_id<=?";
 
     std::string command = "SELECT prim_id FROM normalized_name WHERE name GLOB \"" + parsed[level] + "*\" " + extra + " ORDER BY length(name)";
+    std::cout << level << " " << command << "\n";
     sqlite3pp::query qry(m_db, command.c_str());
     if (level > 0)
     {
