@@ -85,7 +85,9 @@ bool Geocoder::search(const std::vector<std::string> &parsed, std::vector<Geocod
         if ( test > 0 ) command += "*";
         command += "\" " + extra + " ORDER BY length(name)";
 
+#ifdef GEONLP_PRINT_DEBUG
         std::cout << level << " " << command << "\n";
+#endif
         sqlite3pp::query qry(m_db, command.c_str());
         if (level > 0)
         {
