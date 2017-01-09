@@ -77,30 +77,25 @@ bool Geocoder::search(const std::vector<std::string> &parsed, std::vector<Geocod
 
     std::deque<long long int> ids;
 
-    /// search first for a string as given (test=0) and then
-    /// allow glob expansion (test>0) if nothing is found
-    for (int test=0; test < 2 && ids.empty(); ++test)
-    {
-        std::string command = "SELECT prim_id FROM normalized_name WHERE name GLOB \"" + parsed[level];
-        if ( test > 0 ) command += "*";
-        command += "\" " + extra + " ORDER BY length(name)";
+    std::string command =
+            "SELECT prim_id FROM normalized_name WHERE name GLOB \"" + parsed[level] +
+            "*\" " + extra + " ORDER BY length(name)";
 
 #ifdef GEONLP_PRINT_DEBUG
-        std::cout << level << " " << command << "\n";
+    std::cout << level << " " << command << "\n";
 #endif
-        sqlite3pp::query qry(m_db, command.c_str());
-        if (level > 0)
-        {
-            qry.bind(1, range0);
-            qry.bind(2, range1);
-        }
+    sqlite3pp::query qry(m_db, command.c_str());
+    if (level > 0)
+    {
+        qry.bind(1, range0);
+        qry.bind(2, range1);
+    }
 
-        for (auto v : qry)
-        {
-            long long int id;
-            v.getter() >> id;
-            ids.push_back(id);
-        }
+    for (auto v : qry)
+    {
+        long long int id;
+        v.getter() >> id;
+        ids.push_back(id);
     }
 
     for (long long int id: ids)
