@@ -3,6 +3,11 @@
 #include <libpostal/libpostal.h>
 
 #include <iostream>
+#include <sstream>
+#include <algorithm>
+#include <functional>
+#include <cctype>
+#include <locale>
 
 using namespace GeoNLP;
 
@@ -90,6 +95,8 @@ void Postal::drop()
 //////////////////////////////////////////////////////////////
 /// expand first then normalize
 
+/// Helper classes and functions
+
 // cartesian product from http://stackoverflow.com/questions/5279051/how-can-i-create-cartesian-product-of-vector-of-vectors
 typedef std::vector<std::string> Vi;
 typedef std::vector<Vi> Vvi;
@@ -157,29 +164,108 @@ static void cart_product(
     }
 }
 
-bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &result, Postal::ParseResult &nonormalization)
-{
-    if (!init()) return false;
+// trim from start
+static inline std::string &ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+                                    std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
+}
 
-    // convert string into vector of chars (libpostal uses char* as an argument, not const char*)
-    std::vector<char> charbuff;
-    charbuff.resize(input.length() + 1);
-    std::copy(input.c_str(), input.c_str() + input.length() + 1, charbuff.begin());
+// trim from end
+static inline std::string &rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+                         std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
+}
+
+// trim from both ends
+static inline std::string &trim(std::string &s) {
+    return ltrim(rtrim(s));
+}
+
+static void split_tokens(const std::string &s, char delim,
+                         std::vector<std::string> &elems)
+{
+    std::stringstream ss;
+    ss.str(s);
+    std::string item;
+    while (std::getline(ss, item, delim))
+        if (!item.empty())
+            elems.push_back(trim(item));
+}
+
+static std::string primitive_key(size_t ind)
+{
+    std::ostringstream ss;
+    ss << "h-" << ind;
+    return ss.str();
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////
+/// Postal::parse
+bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &result,
+                   Postal::ParseResult &nonormalization)
+{
+    if (m_use_postal && !init())
+        return false;
+
+    // libpostal parsing
+    if (m_use_postal)
+    {
+        // convert string into vector of chars (libpostal uses char* as an argument, not const char*)
+        std::vector<char> charbuff;
+        charbuff.resize(input.length() + 1);
+        std::copy(input.c_str(), input.c_str() + input.length() + 1, charbuff.begin());
+
+        address_parser_options_t options_parse = get_libpostal_address_parser_default_options();
+
+        // parse the address
+        address_parser_response_t *parsed = parse_address(charbuff.data(), options_parse);
+        nonormalization.clear();
+        for (size_t j = 0; j < parsed->num_components; j++)
+            nonormalization[ parsed->labels[j] ] = parsed->components[j];
+        address_parser_response_destroy(parsed);
+
+        expand(nonormalization, result);
+    }
+
+    // primitive parsing
+    if (m_use_primitive)
+    {
+        std::vector<std::string> hier;
+        split_tokens(input, ',', hier);
+
+        if (!hier.empty())
+        {
+            ParseResult prim;
+            for (size_t j = 0; j < hier.size(); j++)
+                prim[ primitive_key(j) ] = hier[hier.size()-j-1];
+
+            expand(prim, result);
+        }
+    }
+
+    if (m_initialize_for_every_call) drop();
+
+    return true;
+}
+
+void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseResult> &result)
+{
+    if (!m_use_postal || !init())
+    {
+        result.push_back(input);
+        return;
+    }
 
     size_t num_expansions;
     normalize_options_t options_norm = get_libpostal_default_options();
-    address_parser_options_t options_parse = get_libpostal_address_parser_default_options();
-
-    // parse the address
-    address_parser_response_t *parsed = parse_address(charbuff.data(), options_parse);
-    nonormalization.clear();
-    for (size_t j = 0; j < parsed->num_components; j++)
-        nonormalization[ parsed->labels[j] ] = parsed->components[j];
-    address_parser_response_destroy(parsed);
+    std::vector<char> charbuff;
 
     std::vector< std::vector< std::string > > address_expansions;
     std::vector< std::string > address_keys;
-    for (const auto i: nonormalization)
+    for (const auto i: input)
     {
         const std::string &tonorm = i.second;
         charbuff.resize(tonorm.length() + 1);
@@ -206,10 +292,6 @@ bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &r
             r[ address_keys[i] ] = ae[i];
         result.push_back(r);
     }
-
-    if (m_initialize_for_every_call) drop();
-
-    return true;
 }
 
 void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<std::vector<std::string> > &h)
@@ -229,6 +311,20 @@ void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<std
         ADDIFHAS(ADDRESS_PARSER_LABEL_ROAD);
         ADDIFHAS(ADDRESS_PARSER_LABEL_HOUSE_NUMBER);
         ADDIFHAS(ADDRESS_PARSER_LABEL_HOUSE);
+
+        // test if its primitive expansion result
+        if (h_result.empty())
+        {
+            bool done = false;
+            for (size_t i=0; !done; ++i)
+            {
+                ParseResult::const_iterator it = r.find(primitive_key(i));
+                if (it == r.end())
+                    done = true;
+                else
+                    h_result.push_back(it->second);
+            }
+        }
 
         h.push_back(h_result);
     }
