@@ -36,16 +36,31 @@ void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
     result.clear();
     m_min_missing_levels = -1;
 
+#ifdef GEONLP_PRINT_DEBUG
     std::cout << "Search hierarchies:\n";
+#endif
+#ifdef GEONLP_PRINT_DEBUG_QUERIES
+    std::cout << "\n";
+#endif
+
     for (const auto &r: parsed_result)
     {
+#ifdef GEONLP_PRINT_DEBUG
         for (auto a: r)
             std::cout << a << " / ";
-        std::cout << "\n\n";
+        std::cout << "\n";
+#endif
 
         m_query_count = 0;
         search(r, result);
+#ifdef GEONLP_PRINT_DEBUG_QUERIES
+        std::cout << "\n";
+#endif
     }
+
+#ifdef GEONLP_PRINT_DEBUG
+        std::cout << "\n";
+#endif
 
     // fill the data
     for (GeoResult &r: result)
@@ -81,7 +96,7 @@ bool Geocoder::search(const std::vector<std::string> &parsed, std::vector<Geocod
             "SELECT prim_id FROM normalized_name WHERE name GLOB \"" + parsed[level] +
             "*\" " + extra + " ORDER BY length(name)";
 
-#ifdef GEONLP_PRINT_DEBUG
+#ifdef GEONLP_PRINT_DEBUG_QUERIES
     std::cout << level << " " << command << "\n";
 #endif
     sqlite3pp::query qry(m_db, command.c_str());
