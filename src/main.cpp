@@ -24,6 +24,11 @@ int main(int argc, char *argv[])
     std::vector< Postal::ParseResult > parsed_query;
     Postal::ParseResult nonorm;
 
+    postal.set_postal_datadir("postal-data", "postal-data/DE");
+    postal.add_language("de");
+    postal.add_language("et");
+    postal.add_language("en");
+
     postal.parse(query, parsed_query, nonorm);
 
     std::cout << "\nAddress parsing before full normalization:\n\n";

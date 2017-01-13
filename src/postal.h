@@ -28,6 +28,11 @@ public:
     bool get_use_primitive() const { return m_use_primitive; }
     void set_use_primitive(bool v) { m_use_primitive = v; }
 
+    void set_postal_datadir(const std::string &global, const std::string &country);
+
+    void clear_languages() { m_postal_languages.clear(); }
+    void add_language(const std::string &lang);
+
 protected:
     bool init();
     void drop();
@@ -39,6 +44,10 @@ protected:
     bool m_initialize_for_every_call = false;
     bool m_use_postal = true;
     bool m_use_primitive = true;
+
+    std::vector<char> m_postal_datadir_global;
+    std::vector<char> m_postal_datadir_country;
+    std::vector< std::vector<char> > m_postal_languages;
 };
 
 }

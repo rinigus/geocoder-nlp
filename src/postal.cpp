@@ -22,87 +22,60 @@ using namespace GeoNLP;
 #define ADDRESS_PARSER_LABEL_POSTAL_CODE  "postal_code"
 #define ADDRESS_PARSER_LABEL_COUNTRY  "country"
 
-Postal::Postal()
-{
+//////////////////////////////////////////////////////////////////////
+/// Helper string functions
+///
 
+static void str2vecchar(const std::string &s, std::vector<char> &v)
+{
+    v.resize(s.length() + 1);
+    std::copy(s.c_str(), s.c_str() + s.length() + 1, v.begin());
 }
 
-Postal::~Postal()
-{
-    drop();
+// trim from start
+static inline std::string &ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+                                    std::not1(std::ptr_fun<int, int>(std::isspace))));
+    return s;
 }
 
-bool Postal::init()
-{
-    if (m_initialized) return true;
-
-    if (!libpostal_setup() || !libpostal_setup_language_classifier() || !libpostal_setup_parser())
-    {
-        return false;
-    }
-
-    m_initialized = true;
-    return true;
+// trim from end
+static inline std::string &rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(),
+                         std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+    return s;
 }
 
-void Postal::drop()
-{
-    if (!m_initialized) return;
-    libpostal_teardown();
-    libpostal_teardown_language_classifier();
-    libpostal_teardown_parser();
-    m_initialized = false;
+// trim from both ends
+static inline std::string &trim(std::string &s) {
+    return ltrim(rtrim(s));
 }
 
-/// Normalize first, expand next. Seems to miss few expansions in current implementation
-//bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &result)
-//{
-//    if (!init()) return false;
+static void split_tokens(const std::string &s, char delim,
+                         std::vector<std::string> &elems)
+{
+    std::stringstream ss;
+    ss.str(s);
+    std::string item;
+    while (std::getline(ss, item, delim))
+        if (!item.empty())
+            elems.push_back(trim(item));
+}
 
-//    // convert string into vector of chars (libpostal uses char* as an argument, not const char*)
-//    std::vector<char> charbuff;
-//    charbuff.resize(input.length() + 1);
-//    std::copy(input.c_str(), input.c_str() + input.length() + 1, charbuff.begin());
+static std::string primitive_key(size_t ind)
+{
+    std::ostringstream ss;
+    ss << "h-" << ind;
+    return ss.str();
+}
 
-//    size_t num_expansions;
-//    normalize_options_t options_norm = get_libpostal_default_options();
-//    address_parser_options_t options_parse = get_libpostal_address_parser_default_options();
-
-//    char **expansions = expand_address(charbuff.data(), options_norm, &num_expansions);
-//    if (m_initialize_for_every_call)
-//        libpostal_teardown_language_classifier();
-
-//    for (size_t i = 0; i < num_expansions; i++)
-//    {
-//        address_parser_response_t *parsed = parse_address(expansions[i], options_parse);
-
-//        ParseResult r;
-//        for (size_t j = 0; j < parsed->num_components; j++)
-//            r[ parsed->labels[j] ] = parsed->components[j];
-
-//        result.push_back(r);
-
-//        address_parser_response_destroy(parsed);
-//    }
-
-//    expansion_array_destroy(expansions, num_expansions);
-
-//    if (m_initialize_for_every_call) drop();
-
-//    return true;
-//}
-
-//////////////////////////////////////////////////////////////
-/// expand first then normalize
-
-/// Helper classes and functions
+//////////////////////////////////////////////////////
+/// Helper classes and functions for cartesian product
 
 // cartesian product from http://stackoverflow.com/questions/5279051/how-can-i-create-cartesian-product-of-vector-of-vectors
 typedef std::vector<std::string> Vi;
 typedef std::vector<Vi> Vvi;
 
-// Seems like you'd want a vector of iterators
-// which iterate over your individual vector<int>s.
 struct Digits {
     Vi::const_iterator begin;
     Vi::const_iterator end;
@@ -164,46 +137,112 @@ static void cart_product(
     }
 }
 
-// trim from start
-static inline std::string &ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-                                    std::not1(std::ptr_fun<int, int>(std::isspace))));
-    return s;
-}
+///////////////////////////////////////////////////////////////////
+/// Postal class
 
-// trim from end
-static inline std::string &rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-                         std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-    return s;
-}
-
-// trim from both ends
-static inline std::string &trim(std::string &s) {
-    return ltrim(rtrim(s));
-}
-
-static void split_tokens(const std::string &s, char delim,
-                         std::vector<std::string> &elems)
+Postal::Postal()
 {
-    std::stringstream ss;
-    ss.str(s);
-    std::string item;
-    while (std::getline(ss, item, delim))
-        if (!item.empty())
-            elems.push_back(trim(item));
+
 }
 
-static std::string primitive_key(size_t ind)
+Postal::~Postal()
 {
-    std::ostringstream ss;
-    ss << "h-" << ind;
-    return ss.str();
+    drop();
 }
 
+void Postal::set_postal_datadir(const std::string &global, const std::string &country)
+{
+    if (global.empty()) m_postal_datadir_global.clear();
+    else str2vecchar(global, m_postal_datadir_global);
 
-//////////////////////////////////////////////////////////////////////////////////////
-/// Postal::parse
+    if (country.empty()) m_postal_datadir_country.clear();
+    else str2vecchar(country, m_postal_datadir_country);
+
+    drop(); // force reinitialization
+}
+
+void Postal::add_language(const std::string &lang)
+{
+    std::vector<char> l;
+    str2vecchar(lang, l);
+    m_postal_languages.push_back(l);
+}
+
+bool Postal::init()
+{
+    if (m_initialized) return true;
+
+    if ( (m_postal_datadir_global.empty() && !libpostal_setup() ) ||
+         (!m_postal_datadir_global.empty() && !libpostal_setup_datadir(m_postal_datadir_global.data())) )
+        return false;
+
+    if ( (m_postal_datadir_country.empty() && !libpostal_setup_parser() ) ||
+         (!m_postal_datadir_country.empty() && !libpostal_setup_parser_datadir(m_postal_datadir_country.data())) )
+        return false;
+
+    if ( m_postal_languages.empty() )
+    {
+        if ( (m_postal_datadir_global.empty() && !libpostal_setup_language_classifier() ) ||
+             (!m_postal_datadir_global.empty() && !libpostal_setup_language_classifier_datadir(m_postal_datadir_global.data())) )
+            return false;
+    }
+
+    m_initialized = true;
+    return true;
+}
+
+void Postal::drop()
+{
+    if (!m_initialized) return;
+    libpostal_teardown();
+    libpostal_teardown_language_classifier();
+    libpostal_teardown_parser();
+    m_initialized = false;
+}
+
+/// Normalize first, expand next. Seems to miss few expansions in current implementation
+/// Have to wait for new libpostal version to switch to this approach
+
+//bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &result)
+//{
+//    if (!init()) return false;
+
+//    // convert string into vector of chars (libpostal uses char* as an argument, not const char*)
+//    std::vector<char> charbuff;
+//    charbuff.resize(input.length() + 1);
+//    std::copy(input.c_str(), input.c_str() + input.length() + 1, charbuff.begin());
+
+//    size_t num_expansions;
+//    normalize_options_t options_norm = get_libpostal_default_options();
+//    address_parser_options_t options_parse = get_libpostal_address_parser_default_options();
+
+//    char **expansions = expand_address(charbuff.data(), options_norm, &num_expansions);
+//    if (m_initialize_for_every_call)
+//        libpostal_teardown_language_classifier();
+
+//    for (size_t i = 0; i < num_expansions; i++)
+//    {
+//        address_parser_response_t *parsed = parse_address(expansions[i], options_parse);
+
+//        ParseResult r;
+//        for (size_t j = 0; j < parsed->num_components; j++)
+//            r[ parsed->labels[j] ] = parsed->components[j];
+
+//        result.push_back(r);
+
+//        address_parser_response_destroy(parsed);
+//    }
+
+//    expansion_array_destroy(expansions, num_expansions);
+
+//    if (m_initialize_for_every_call) drop();
+
+//    return true;
+//}
+
+//////////////////////////////////////////////////////////////
+/// expand first then normalize
+
 bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &result,
                    Postal::ParseResult &nonormalization)
 {
@@ -261,6 +300,14 @@ void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseR
 
     size_t num_expansions;
     normalize_options_t options_norm = get_libpostal_default_options();
+
+    std::vector<char*> lang;
+    for (std::vector<char> &l: m_postal_languages)
+        lang.push_back(l.data());
+
+    options_norm.languages = lang.data();
+    options_norm.num_languages = lang.size();
+
     std::vector<char> charbuff;
 
     std::vector< std::vector< std::string > > address_expansions;
