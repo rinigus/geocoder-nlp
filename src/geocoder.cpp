@@ -34,7 +34,7 @@ void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
     Postal::result2hierarchy(parsed_query, parsed_result);
 
     result.clear();
-    m_min_missing_levels = -1;
+    m_levels_resolved = 0;
 
 #ifdef GEONLP_PRINT_DEBUG
     std::cout << "Search hierarchies:\n";
@@ -128,14 +128,14 @@ bool Geocoder::search(const std::vector<std::string> &parsed, std::vector<Geocod
 
         if ( r1 <= id || !search(parsed, result, level+1, id, r1) )
         {
-            int missing = parsed.size() - level - 1;
-            if ( m_min_missing_levels<0 || missing < m_min_missing_levels )
+            size_t levels_resolved = level+1;
+            if ( m_levels_resolved < levels_resolved )
             {
                 result.clear();
-                m_min_missing_levels = missing;
+                m_levels_resolved = levels_resolved;
             }
 
-            if (m_min_missing_levels == missing)
+            if (m_levels_resolved == levels_resolved)
             {
                 bool have_already = false;
                 for (const auto &r: result)
@@ -149,7 +149,7 @@ bool Geocoder::search(const std::vector<std::string> &parsed, std::vector<Geocod
                 {
                     GeoResult r;
                     r.id = id;
-                    r.levels_missing = missing;
+                    r.levels_resolved = levels_resolved;
                     result.push_back(r);
                 }
             }

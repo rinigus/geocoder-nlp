@@ -20,7 +20,7 @@ public:
         double longitude;
         std::string title;
         std::string address;
-        int levels_missing;
+        size_t levels_resolved;
     };
 
 public:
@@ -49,7 +49,7 @@ protected:
     int m_levels_in_title = 2;
     size_t m_max_queries_per_hierarchy = 0;
 
-    int m_min_missing_levels;
+    size_t m_levels_resolved;
     size_t m_query_count;
 };
 

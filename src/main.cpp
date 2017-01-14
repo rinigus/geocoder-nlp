@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
         std::cout << r.title << "\n"
                   << r.address << "\n"
                   << r.latitude << ", " << r.longitude << "\n"
-                  << r.id << " / " << r.levels_missing << "\n\n";
+                  << r.id << " / " << r.levels_resolved << "\n\n";
         counter++;
     }
 
