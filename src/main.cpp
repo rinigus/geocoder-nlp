@@ -16,7 +16,7 @@ int main(int argc, char *argv[])
         std::cout << "Use: " << argv[0] << " sqlite.dbase address\n"
                   << "where\n"
                   << " sqlite.dbase - path to SQLite database\n"
-                  << " address - address to be parsed (please enclose it in \" \" to ensure that its a singe argument\n";
+                  << " address - address to be parsed (please enclose it in \" \" to ensure that its a singe argument)\n";
         return -1;
     }
 
@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
     std::vector< Postal::ParseResult > parsed_query;
     Postal::ParseResult nonorm;
 
-    postal.set_postal_datadir("postal-data", "postal-data/DE");
+    postal.set_postal_datadir("postal-data", "postal-data/EE");
     postal.add_language("de");
     postal.add_language("et");
     postal.add_language("en");
