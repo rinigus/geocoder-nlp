@@ -35,6 +35,9 @@ public:
     size_t get_max_queries_per_hierarchy() const { return m_max_queries_per_hierarchy; }
     void set_max_queries_per_hierarchy(size_t mx) { m_max_queries_per_hierarchy = mx; }
 
+    size_t get_max_results() const { return m_max_results; }
+    void set_max_results(size_t mx) { m_max_results = mx; }
+
     bool load(const std::string &dbpath);
     void drop();
 
@@ -48,6 +51,7 @@ protected:
     sqlite3pp::database m_db;
     int m_levels_in_title = 2;
     size_t m_max_queries_per_hierarchy = 0;
+    size_t m_max_results = 0;
 
     size_t m_levels_resolved;
     size_t m_query_count;

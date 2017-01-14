@@ -135,7 +135,7 @@ bool Geocoder::search(const std::vector<std::string> &parsed, std::vector<Geocod
                 m_levels_resolved = levels_resolved;
             }
 
-            if (m_levels_resolved == levels_resolved)
+            if (m_levels_resolved == levels_resolved && (m_max_results==0 || result.size() < m_max_results))
             {
                 bool have_already = false;
                 for (const auto &r: result)

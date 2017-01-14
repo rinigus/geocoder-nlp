@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 
     Geocoder geo(argv[1]);
     geo.set_max_queries_per_hierarchy(25);
+    geo.set_max_results(25);
 
     std::vector<Geocoder::GeoResult> result;
 
