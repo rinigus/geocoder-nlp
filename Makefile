@@ -4,10 +4,14 @@
 CXX := g++
 
 LIBPOSTAL_INCLUDE=-I/usr/local/include
+
 #LIBPOSTAL_LIB=-lpostal
 LIBPOSTAL_LIB=-l:libpostal.a -l:libsnappy.a
 
-SQLITE_LIB=-lsqlite3
+#SQLITE_LIB=-lsqlite3
+SQLITE_LIB=-l:libsqlite3.a
+
+LD_EXTRA_OPTIONS += -pthread -ldl -static-libgcc -static-libstdc++
 
 #CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG_QUERIES
 #CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG
@@ -39,7 +43,7 @@ $(APPNAME): $(OBJS)
 	@echo
 	@echo "--------- LINKING --- $@ "
 	rm -f $(APPNAME)
-	$(LD) -o $@ $^ $(LIBRARIES)
+	$(LD) -o $@ $^ $(LIBRARIES) $(LD_EXTRA_OPTIONS)
 	@echo
 	@echo '--------- Make done '
 	@echo
