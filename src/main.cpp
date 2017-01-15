@@ -9,25 +9,27 @@ using namespace GeoNLP;
 int main(int argc, char *argv[])
 {
     Postal postal;
-    postal.set_initialize_every_call(true);
+    //postal.set_initialize_every_call(true);
 
-    if (argc < 3)
+    if (argc < 5)
     {
-        std::cout << "Use: " << argv[0] << " sqlite.dbase address\n"
+        std::cout << "Use: " << argv[0] << " sqlite.dbase postal_global postal_country address\n"
                   << "where\n"
                   << " sqlite.dbase - path to SQLite database\n"
+                  << " postal_global - path to libpostal database with language classifier\n"
+                  << " postal_country - path to libpostal  database covering country\n"
                   << " address - address to be parsed (please enclose it in \" \" to ensure that its a singe argument)\n";
         return -1;
     }
 
-    char *query = argv[2];
+    char *query = argv[4];
     std::vector< Postal::ParseResult > parsed_query;
     Postal::ParseResult nonorm;
 
-    postal.set_postal_datadir("postal-data", "postal-data/EE");
-    postal.add_language("de");
-    postal.add_language("et");
-    postal.add_language("en");
+    postal.set_postal_datadir(argv[2], argv[3]);
+    //postal.add_language("de");
+    //postal.add_language("et");
+    //postal.add_language("en");
 
     postal.parse(query, parsed_query, nonorm);
 
