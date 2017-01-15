@@ -26,7 +26,8 @@ OBJSUBDIR := obj
 INCLUDE  = $(LIBPOSTAL_INCLUDE) -Ithirdparty/sqlite3pp/headeronly_src -I$(SRCSUBDIR)
 LIBRARIES += $(LIBPOSTAL_LIB) $(SQLITE_LIB)
 
-OBJS	= $(patsubst $(SRCSUBDIR)/%.cpp,$(OBJSUBDIR)/%.o,$(wildcard $(SRCSUBDIR)/*.cpp))
+OBJS	= $(patsubst $(SRCSUBDIR)/%.cpp,$(OBJSUBDIR)/%.o,$(wildcard $(SRCSUBDIR)/*.cpp)) \
+	  $(patsubst demo/%.cpp,$(OBJSUBDIR)/demo_%.o,$(wildcard demo/*.cpp))
 
 CXX_EXTRA_OPTIONS += -std=c++11
 CXXFLAGS := -O2 -g $(EXTRA_OPTIONS) $(CXX_EXTRA_OPTIONS) $(INCLUDE)  
@@ -55,6 +56,12 @@ $(OBJSUBDIR):
 	@echo
 
 $(OBJSUBDIR)/%.o: $(SRCSUBDIR)/%.cpp 
+	@echo
+	@echo "------------ $< "
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<
+	@echo
+
+$(OBJSUBDIR)/demo_%.o: demo/%.cpp 
 	@echo
 	@echo "------------ $< "
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<

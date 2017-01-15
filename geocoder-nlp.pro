@@ -8,7 +8,7 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
-SOURCES += src/main.cpp \
+SOURCES += demo/main.cpp \
     src/postal.cpp \
     src/geocoder.cpp
 
@@ -20,6 +20,7 @@ HEADERS += \
     src/geocoder.h
 
 INCLUDEPATH += /usr/local/libpostal/include
+INCLUDEPATH += src
 LIBS += -lpostal
 
 INCLUDEPATH += thirdparty/sqlite3pp/headeronly_src
