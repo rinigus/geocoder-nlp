@@ -7,11 +7,11 @@ INCLUDEPATH += $$PWD/thirdparty/sqlite3pp/headeronly_src
 DEPENDPATH += $$PWD/src
 
 SOURCES += \
-    $$PWD/postal.cpp \
-    $$PWD/geocoder.cpp
+    $$PWD/src/postal.cpp \
+    $$PWD/src/geocoder.cpp
 
 HEADERS += \
-    $$PWD/postal.h \
-    $$PWD/geocoder.h
+    $$PWD/src/postal.h \
+    $$PWD/src/geocoder.h
        
 LIBS += -lpostal -lsqlite3
