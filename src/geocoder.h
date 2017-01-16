@@ -10,20 +10,20 @@
 
 namespace GeoNLP {
 
-class Geocoder
-{
+  class Geocoder
+  {
 
-public:
+  public:
     struct GeoResult {
-        long long int id;
-        double latitude;
-        double longitude;
-        std::string title;
-        std::string address;
-        size_t levels_resolved;
+      long long int id;
+      double latitude;
+      double longitude;
+      std::string title;
+      std::string address;
+      size_t levels_resolved;
     };
 
-public:
+  public:
     Geocoder();
     Geocoder(const std::string &dbpath);
 
@@ -41,13 +41,13 @@ public:
     bool load(const std::string &dbpath);
     void drop();
 
-protected:
+  protected:
     bool search(const std::vector<std::string> &parsed, std::vector<GeoResult> &result, size_t level=0,
                 long long int range0=0, long long int range1=0);
 
     void get_name(long long int id, std::string &title, std::string &full, int levels_in_title);
 
-protected:
+  protected:
     sqlite3pp::database m_db;
     int m_levels_in_title = 2;
     size_t m_max_queries_per_hierarchy = 0;
@@ -55,7 +55,7 @@ protected:
 
     size_t m_levels_resolved;
     size_t m_query_count;
-};
+  };
 
 }
 #endif // GEOCODER_H

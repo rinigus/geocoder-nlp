@@ -7,9 +7,9 @@
 
 namespace GeoNLP {
 
-class Postal
-{
-public:
+  class Postal
+  {
+  public:
     Postal();
     ~Postal();
 
@@ -33,13 +33,13 @@ public:
     void clear_languages() { m_postal_languages.clear(); }
     void add_language(const std::string &lang);
 
-protected:
+  protected:
     bool init();
     void drop();
 
     void expand(const Postal::ParseResult &input, std::vector< Postal::ParseResult > &result);
 
-protected:
+  protected:
     bool m_initialized = false;
     bool m_initialize_for_every_call = false;
     bool m_use_postal = true;
@@ -48,7 +48,7 @@ protected:
     std::vector<char> m_postal_datadir_global;
     std::vector<char> m_postal_datadir_country;
     std::vector< std::vector<char> > m_postal_languages;
-};
+  };
 
 }
 
