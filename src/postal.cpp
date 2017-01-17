@@ -152,10 +152,10 @@ Postal::~Postal()
 
 void Postal::set_postal_datadir(const std::string &global, const std::string &country)
 {
-  if (global.empty()) m_postal_datadir_global.clear();
+  if (global.length() < 1) m_postal_datadir_global.clear();
   else str2vecchar(global, m_postal_datadir_global);
 
-  if (country.empty()) m_postal_datadir_country.clear();
+  if (country.length() < 1) m_postal_datadir_country.clear();
   else str2vecchar(country, m_postal_datadir_country);
 
   drop(); // force reinitialization
