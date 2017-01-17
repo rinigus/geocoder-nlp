@@ -29,6 +29,11 @@ bool Geocoder::load(const std::string &dbname)
   return m_database_open;
 }
 
+bool Geocoder::load()
+{
+  return load( m_database_path );
+}
+
 void Geocoder::drop()
 {
   m_db.disconnect();
@@ -88,6 +93,8 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
 	  break;
         }
     }
+
+  return true;
 }
 
 bool Geocoder::search(const std::vector<std::string> &parsed, std::vector<Geocoder::GeoResult> &result, size_t level,

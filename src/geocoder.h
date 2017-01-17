@@ -20,6 +20,7 @@ namespace GeoNLP {
       double longitude;
       std::string title;
       std::string address;
+      std::string type;
       size_t levels_resolved;
     };
 
@@ -39,7 +40,10 @@ namespace GeoNLP {
     void set_max_results(size_t mx) { m_max_results = mx; }
 
     bool load(const std::string &dbpath);
+    bool load();
     void drop();
+
+    operator bool() const { return m_database_open; }
 
   protected:
     bool search(const std::vector<std::string> &parsed, std::vector<GeoResult> &result, size_t level=0,
