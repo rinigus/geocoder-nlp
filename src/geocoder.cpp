@@ -19,16 +19,28 @@ Geocoder::Geocoder(const std::string &dbname)
 
 bool Geocoder::load(const std::string &dbname)
 {
-  return (m_db.connect(dbname.c_str(), SQLITE_OPEN_READONLY) == SQLITE_OK);
+  if (dbname == m_database_path && m_database_open) return true;
+
+  if (dbname != m_database_path && !m_database_open)
+    drop();
+  
+  m_database_open = (m_db.connect(dbname.c_str(), SQLITE_OPEN_READONLY) == SQLITE_OK);
+  m_database_path = dbname;
+  return m_database_open;
 }
 
 void Geocoder::drop()
 {
   m_db.disconnect();
+  m_database_path = std::string();
+  m_database_open = false;
 }
 
-void Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)
+bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)
 {
+  if (!m_database_open)
+    return false;
+  
   // parse query by libpostal
   std::vector< std::vector<std::string> > parsed_result;
   Postal::result2hierarchy(parsed_query, parsed_result);

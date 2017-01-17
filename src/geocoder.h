@@ -27,7 +27,7 @@ namespace GeoNLP {
     Geocoder();
     Geocoder(const std::string &dbpath);
 
-    void search(const std::vector< Postal::ParseResult > &parsed_query, std::vector<GeoResult> &result);
+    bool search(const std::vector< Postal::ParseResult > &parsed_query, std::vector<GeoResult> &result);
 
     int get_levels_in_title() const { return m_levels_in_title; }
     void set_levels_in_title(int l) { m_levels_in_title = l; }
@@ -49,6 +49,9 @@ namespace GeoNLP {
 
   protected:
     sqlite3pp::database m_db;
+    std::string m_database_path;
+    bool m_database_open = false;
+    
     int m_levels_in_title = 2;
     size_t m_max_queries_per_hierarchy = 0;
     size_t m_max_results = 0;
