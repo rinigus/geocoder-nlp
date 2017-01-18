@@ -14,4 +14,4 @@ HEADERS += \
     $$PWD/src/postal.h \
     $$PWD/src/geocoder.h
        
-LIBS += -lpostal -lsqlite3
+LIBS += -lpostal -lsnappy -lsqlite3
