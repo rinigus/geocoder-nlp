@@ -30,7 +30,7 @@ namespace GeoNLP {
 
     void set_postal_datadir(const std::string &global, const std::string &country);
 
-    void clear_languages() { m_postal_languages.clear(); }
+    void clear_languages() { m_postal_languages.clear(); drop(); }
     void add_language(const std::string &lang);
 
   protected:

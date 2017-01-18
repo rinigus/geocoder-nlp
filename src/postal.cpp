@@ -166,6 +166,7 @@ void Postal::add_language(const std::string &lang)
   std::vector<char> l;
   str2vecchar(lang, l);
   m_postal_languages.push_back(l);
+  drop();
 }
 
 bool Postal::init()
