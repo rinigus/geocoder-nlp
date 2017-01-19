@@ -83,6 +83,7 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
   for (GeoResult &r: result)
     {
       get_name(r.id, r.title, r.address, m_levels_in_title);
+      r.type = get_type(r.id);
 
       sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
       qry.bind(1, r.id);
@@ -221,4 +222,24 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, int
       get_name(parent, title, full, levels_in_title-1);
       return;
     }
+}
+
+
+std::string Geocoder::get_type(long long id)
+{
+  std::string name;
+
+  sqlite3pp::query qry(m_db, "SELECT t.name FROM object_type o JOIN type t ON t.id=o.type_id WHERE o.prim_id=?");
+  qry.bind(1, id);
+  
+  for (auto v: qry)
+    {
+      std::string n;
+      v.getter() >> n;
+
+      if (!name.empty()) name += ", ";
+      name += n;
+    }
+
+  return name;
 }

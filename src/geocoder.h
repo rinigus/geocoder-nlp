@@ -51,6 +51,8 @@ namespace GeoNLP {
 
     void get_name(long long int id, std::string &title, std::string &full, int levels_in_title);
 
+    std::string get_type(long long int id);
+    
   protected:
     sqlite3pp::database m_db;
     std::string m_database_path;
