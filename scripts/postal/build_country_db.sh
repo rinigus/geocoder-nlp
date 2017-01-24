@@ -44,7 +44,7 @@ fi
 #################################################################
 ### PATH TO LIBPOSTAL SRC DIRECTORY WITH COMPILED EXECUTABLES ###
 
-POSTAL_SRC_DIR=../libpostal/src
+POSTAL_SRC_DIR=libpostal/src
 
 #################################################################
 
@@ -58,7 +58,8 @@ TMPDATA="$OUTPUT/tmp-$COUNTRY-`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8
 COUNTRY_LOWER="${COUNTRY,,}"
 COUNTRY_UPPER="${COUNTRY^^}"
 
-COUNTRY_DIR="$OUTPUT/$COUNTRY_UPPER"
+COUNTRY_DIR_BASE=$COUNTRY_UPPER
+COUNTRY_DIR="$OUTPUT/$COUNTRY_DIR_BASE"
 
 PATH="$POSTAL_SRC_DIR:$PATH"
 
@@ -80,8 +81,8 @@ echo "Geo data ready"
 
 # Addresses
 cp /dev/null "$OUTPUT_ADDRESS"
-#for file in formatted_addresses_tagged.random.tsv openaddresses_formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
-for file in formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
+for file in formatted_addresses_tagged.random.tsv openaddresses_formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
+#for file in formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
     echo "Address data preparation: $file / $COUNTRY_LOWER" 
     grep $'\t'$COUNTRY_LOWER$'\t' "$ADDRDATA/$file" >> "$OUTPUT_ADDRESS" || true
 done
@@ -100,3 +101,7 @@ time address_parser_train "$OUTPUT_ADDRESS" "$COUNTRY_DIR/address_parser"
 
 echo "Removing temporary directory"
 rm -rf "$TMPDATA"
+
+echo "Compressing country database"
+mkdir -p "$OUTPUT/compressed"
+(cd "$OUTPUT" && tar jcvf "compressed/$COUNTRY_DIR_BASE.tar.bz2" "$COUNTRY_DIR_BASE")
