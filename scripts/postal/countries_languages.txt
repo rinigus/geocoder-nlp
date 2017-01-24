@@ -1,0 +1,241 @@
+ad: ar ca de en es fa fr it ja ko nl pl pt ru tr zh 
+ae: ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+af: ar de en es fa fr it ja ko nl pl ps pt ru tr unk xxx zh 
+ag: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ai: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+al: ar de en es fa fr it ja ko nl pl pt ru sq tr zh 
+am: ar de en es fa fr hy it ja ko nl pl pt ru tr zh 
+ao: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ar: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+as: de en es fa fr it ja nl pl ru zh 
+at: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+au: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+aw: ar de en es fr it ja ko nl pap ru unk zh 
+ax: ar de en es fa fi fr it ja ko nl pl pt ru sv tr unk zh 
+az: ar az de en es fa fr it ja ko nl pl pt ru tr zh 
+ba: ar bs de en es fa fr it ja ko nl pl pt ru tr zh 
+bb: ar de en es fa fr it ja ko nl pl pt ru zh 
+bd: ar bn de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+be: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+bf: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+bg: ar bg de en es fa fr it ja ko nl pl pt ru tr zh 
+bh: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+bi: ar de en es fa fr it ja ko nl pl pt ru zh 
+bj: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+bl: de en es fr nl ru zh 
+bm: ar de en es fa fr it ja ko pl pt ru zh 
+bn: ar de en es fa fr it ja ko ms nl pl pt ru tr zh 
+bo: ar ay de en es fa fr it ja ko nl pl pt qu ru tr unk zh 
+bq: en nl pap ru unk 
+br: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+bs: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+bt: ar de dz en es fa fr it ja ko nl pl pt ru tr zh 
+bw: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+by: ar be de en es fa fr it ja ko nl pl pt ru ru_BY ru_RU ru_by ru_ru tr unk xxx zh 
+bz: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ca: ar de en es fa fr ikt it iu ja ko nl pl pt ru tr unk xxx zh 
+cc: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cd: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cf: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cg: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ch: ar de en es fa fr gsw it ja ko nl pl pt ru tr unk xxx zh 
+ci: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ck: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cl: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cm: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cn: ar bo de en es fa fr it ja ko nl pl pt ru tr unk xxx zh zh_arab zh_hans zh_hant zh_jyutping zh_pinyin zh_py zh_tradition 
+co: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cr: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cu: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cv: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cw: ar de en es fa fr it ja ko nl pap ru unk zh 
+cx: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+cy: ar de el en es fa fr it ja ko nl pl pt ru tr unk zh 
+cz: ar cs de en es fa fr it ja ko nl pl pt ru tr zh 
+de: ar de de_CH en es fa fr it ja ko nl pl pt ru tr zh 
+dj: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+dk: ar da de en es fa fr it ja ko nl pl pt ru tr zh 
+dm: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+do: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+dz: ar de en es fa fr fr_1 it ja ko nl pl pt ru tr unk zh 
+ec: ar de en es fa fr it ja ko nl pl pt qu ru tr unk zh 
+ee: ar de en es et fa fr it ja ko nl pl pt ru tr zh 
+eg: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+er: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+es: ar ca ca_1 de en es eu fa fr gl it ja ko nl oc pl pt ru tr unk xxx zh 
+et: am ar de en es fa fr it ja ko nl pl pt ru tr zh 
+fi: ar de en es fa fi fi_1 fr it ja ko nl pl pt ru sv sv_1 tr unk zh 
+fj: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+fk: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+fm: en fa ja ko ru zh 
+fo: ar de en es fa fo fr it ja ko nl pl pt ru tr zh 
+fr: ar br br_alt de en es fa fr it ja ko nl oc pl pt ru tr unk xxx zh 
+ga: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+gb: ar cy de en en_GB en_IE es fa fr ga gd it ja ko nl pl pt ru tr unk xxx zh 
+gd: ar de en es fa fr it ja ko nl pl pt ru zh 
+ge: ar de en es fa fr it ja ka ko nl pl pt ru ru_1 tr unk xxx zh 
+gf: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+gg: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+gh: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+gl: ar de en es fa fr it ja kl ko nl pl pt ru tr zh 
+gm: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+gn: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+gp: ar de en es fa fr it ja ko pl pt ru tr zh 
+gq: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+gr: ar de el el_latin en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+gt: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+gu: de en es fr it ja ru zh 
+gw: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+gy: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+hk: de en es fr ja nl pl ru unk xxx zh zh_pinyin 
+hn: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+hr: ar de en es fa fr hr it ja ko nl pl pt ru tr zh 
+ht: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+hu: ar de en es fa fr hu it ja ko nl pl pt ru tr zh 
+id: ar de en es fa fr id it ja ko nl pl pt ru tr unk zh 
+ie: ar de en es fa fr ga it ja ko nl pl pt ru tr unk xxx zh 
+il: ar de en es fa fr he it ja ko nl pl pt ru tr unk xxx zh 
+im: ar de en es fa fr gv it ja ko nl pl pt ru tr unk zh 
+in: ar de en es fa fr hi it ja ko nl pl pt ru tr unk xxx zh 
+io: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+iq: ar ar_1 ar_Latn de en en_1 es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+ir: ar de en en_1 es fa fa_1 fr it ja ko nl pl pt ru tr unk xxx zh 
+is: ar de en es fa fr is it ja ko nl pl pt ru tr zh 
+it: ar de en es fa fr it ja ko nl oc pl pt ru sl unk xxx zh 
+je: ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+jm: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+jo: ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+jp: ar de en es fa fr it ja ja_furigana ja_hira ja_kana ja_kana_1 ja_rm ko nl pl pt ru tr unk xxx zh 
+ke: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+kg: ar de en es fa fr it ja ko ky nl pl pt ru tr unk xxx zh 
+kh: ar de en es fa fr it ja km ko nl pl pt ru tr zh 
+ki: ar de en es fa fr it ja ko nl pt ru tr zh 
+km: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+kn: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+kp: ar de en es fa fr it ja ko ko_hanja ko_rm nl pl pt ru tr unk zh 
+kr: ar de en es fa fr it ja ko ko_rm ko_rm_2 nl pl pt ru tr unk zh 
+kw: ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+ky: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+kz: ar de en es fa fr it ja kk ko nl pl pt ru tr unk xxx zh 
+la: ar de en es fa fr it ja ko lo lo_rm nl pl pt ru tr unk xxx zh 
+lb: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+lc: ar de en es fa fr it ja ko nl pl pt ru zh 
+li: ar de en fa fr ja ko nl ru zh 
+lk: ar de en es fa fr it ja ko nl pl pt ru si tr unk zh 
+lr: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+lt: ar de en es fa fr it ja ko lt nl pl pt ru tr zh 
+lu: ar de en es fa fr it ja ko lb nl pl pt ru tr unk xxx zh 
+lv: ar de en es fa fr it ja ko lv nl pl pt ru tr zh 
+ly: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+ma: ar ar_1 de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+mc: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+md: ar de en es fa fr it ja ko nl pl pt ro ru tr zh 
+me: ar de en es fa fr it ja ko nl pl pt ru sr tr zh 
+mf: de en es fr ja ko nl zh 
+mg: ar de en es fa fr it ja ko mg nl pl pt ru tr unk zh 
+mh: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+mk: ar de en es fa fr it ja ko mk nl pl pt ru tr zh 
+ml: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+mm: ar de en es fa fr it ja ko my nl pl pt ru tr zh 
+mn: ar de en es fa fr it ja ko mn mn_mong nl pl pt ru tr unk zh 
+mo: de en es fr ja ko nl pl pt ru unk xxx zh zh_pinyin 
+mp: ar en es fa ja ko ru zh 
+mq: ar de en es fa fr it ja ko pl pt ru tr zh 
+mr: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ms: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+mt: ar de en es fa fr it ja ko mt pl pt ru unk zh 
+mu: ar de en es fa fr it ja ko nl pl pt ru unk xxx zh 
+mv: ar de dv en es fa fr it ja ko nl pl pt ru tr zh 
+mw: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+mx: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+my: ar de en es fa fr it ja ko ms nl pl pt ru tr zh 
+mz: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+na: af ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+nc: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ne: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+nf: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ng: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ni: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+nl: ar de en es fa fr fy it ja ko nl pl pt ru tr unk zh 
+no: ar de en es fa fr it ja ko nb nl pl pt ru tr zh 
+np: ar de en es fa fr it ja ko ne nl pl pt ru tr unk xxx zh 
+nr: ar de en es fa fr it ja ko pl ru zh 
+nu: ar de en es fa fr it ja ko pl ru zh 
+nz: ar de en es fa fr it ja ko mi nl pl pt ru tr unk zh 
+om: ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+pa: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+pe: ar de en es fa fr it ja ko nl pl pt qu ru tr unk zh 
+pf: ar de en es fa fr it ja ko nl pl pt ru zh 
+pg: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ph: ar de en es fa fil fr it ja ko nl pl pt ru tr unk xxx zh 
+pk: ar de en es fa fr it ja ko nl pl pt ru tr unk ur zh 
+pl: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+pm: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+pn: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+pr: ar en es fa ja ko ru unk xxx zh 
+ps: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+pt: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+pw: en fa ja ko pt ru zh 
+py: ar de en es fa fr gn it ja ko nl pl pt ru tr unk zh 
+qa: ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+re: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ro: ar de en es fa fr it ja ko nl pl pt ro ro_1 ro_2 ru tr unk zh 
+rs: ar de en es fa fr it ja ko nl pl pt ru sr tr zh 
+ru: ar de en es fa fr it ja ko nl pl pt ru ru_rm tr unk zh 
+rw: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+sa: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+sb: ar de en fa ja ko ru zh 
+sc: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+sd: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+se: ar de en es fa fr it ja ko nl pl pt ru sv tr zh 
+sg: ar de en es fa fr it ja ko ms nl pl pt ru tr unk zh zh_pinyin 
+sh: ar de en es fa fr it ja ko nl pl pt ru zh 
+si: ar de en es fa fr it ja ko nl pl pt ru sl tr zh 
+sk: ar de en es fa fr it ja ko nl pl pt ru sk tr zh 
+sl: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+sm: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+sn: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+so: ar de en es fa fr it ja ko nl pl pt ru so tr unk zh 
+sr: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ss: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+st: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+sv: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+sx: de en fr it ja nl ru unk xxx zh 
+sy: ar de en en_1 es fa fr it ja ko nl pl pt ru tr unk zh 
+sz: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+tc: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+td: ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+tf: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+tg: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+th: ar de en es fa fr it ja ko nl pl pt ru th tr unk xxx zh 
+tj: ar de en es fa fr it ja ko nl pl pt ru tg tr zh 
+tk: ar de en es fa fr ja ko pl ru unk zh 
+tl: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+tm: ar de en es fa fr it ja ko nl pl pt ru tk tr zh 
+tn: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+to: ar de en es fa fr it ja ko nl pl pt ru to tr unk zh 
+tr: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+tt: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+tv: ar de en es fa fr ja ko pl pt ru tvl zh 
+tw: ar de en es fa fr it ja ko nl pl pt ru tr unk zh zh_pinyin zh_py 
+tz: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ua: ar de en es fa fr it ja ko nl pl pt ru ru_rm tr uk unk xxx zh 
+ug: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+um: de en es fr it pt ru zh 
+us: ar de en es fa fr it ja ko nl pl pt ru tr unk xxx zh 
+uy: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+uz: ar de en es fa fr it ja ko nl pl pt ru tr uz zh 
+va: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+vc: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ve: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+vg: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+vi: ar da de en es fa fr it ja ko nl pl pt ru tr unk zh 
+vn: ar de en es fa fr it ja ko nl pl pt ru tr vi zh 
+vu: ar de en es fa fr it ja ko pl pt ru unk zh 
+wf: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+ws: ar de en es fa fr it ja ko nl pl ru zh 
+ye: ar de en es fa fr it ja ko nl pl pt ru tr unk zh 
+yt: ar en fa fr ja ko pl ru zh 
+za: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+zm: ar de en es fa fr it ja ko nl pl pt ru tr zh 
+zw: ar de en es fa fr it ja ko nl pl pt ru tr zh 
