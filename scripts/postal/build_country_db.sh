@@ -82,9 +82,14 @@ echo "Geo data ready"
 # Addresses
 cp /dev/null "$OUTPUT_ADDRESS"
 for file in formatted_addresses_tagged.random.tsv openaddresses_formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
-#for file in formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
-    echo "Address data preparation: $file / $COUNTRY_LOWER" 
-    grep $'\t'$COUNTRY_LOWER$'\t' "$ADDRDATA/$file" >> "$OUTPUT_ADDRESS" || true
+    echo "Address data preparation: $file / $COUNTRY_LOWER"
+    DSPLIT="$ADDRDATA/$file-split"
+    if [ -d $DSPLIT ]; then
+	echo "Using pre-split" $file
+	cat "$ADDRDATA/$file-split/$file-$COUNTRY_LOWER" >> "$OUTPUT_ADDRESS" || true
+    else
+	grep $'\t'$COUNTRY_LOWER$'\t' "$ADDRDATA/$file" >> "$OUTPUT_ADDRESS" || true
+    fi
 done
 
 echo "Randomize addresses"
