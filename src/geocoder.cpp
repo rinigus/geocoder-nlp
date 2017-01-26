@@ -26,8 +26,12 @@ bool Geocoder::load(const std::string &dbname)
 
   try
     {
-      m_database_open = (m_db.connect(dbname.c_str(), SQLITE_OPEN_READONLY) == SQLITE_OK);
+      m_database_open = (m_db.connect(dbname.c_str(), SQLITE_OPEN_READONLY) == SQLITE_OK );
+
       m_database_path = dbname;
+
+      if ( m_database_open && !check_version() )
+	drop();
     }
   catch (sqlite3pp::database_error e)
     {
@@ -48,6 +52,39 @@ void Geocoder::drop()
   m_db.disconnect();
   m_database_path = std::string();
   m_database_open = false;
+}
+
+bool Geocoder::check_version()
+{
+  return check_version("1");
+}
+  
+bool Geocoder::check_version(const char *supported)
+{
+  // this cannot through exceptions
+  try 
+    {
+      sqlite3pp::query qry(m_db, "SELECT value FROM meta WHERE key=\"version\"");
+      
+      for (auto v: qry)
+	{
+	  std::string n;
+	  v.getter() >> n;
+	  if ( n == "1" ) return true;
+	  else
+	    {
+	      std::cerr << "Geocoder: wrong version of the database. Supported: " << supported << " / database version: " << n << std::endl;
+	      return false;
+	    }
+	}
+    }
+   catch (sqlite3pp::database_error e)
+    {
+      std::cerr << "Geocoder exception while checking database version: " << e.what() << std::endl;
+      return false;
+    }
+     
+  return false;
 }
 
 bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)

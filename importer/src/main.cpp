@@ -7,6 +7,8 @@
 #include <map>
 #include <deque>
 
+#define DB_VERSION "1"
+
 typedef long long int sqlid; /// type used by IDs in SQLite
 
 ///////////////////////////////////////////////////////////
@@ -487,6 +489,10 @@ int main(int argc, char* argv[])
 
   db.execute ( "DROP INDEX IF EXISTS idx_norm_name" );
   db.execute ( "CREATE INDEX idx_norm_name ON normalized_name (name)" );
+
+  db.execute( "DROP TABLE IF EXISTS meta" );
+  db.execute( "CREATE TABLE meta (key TEXT, value TEXT)" );
+  db.execute( "INSERT INTO meta (key, value) VALUES (\"version\", \"" DB_VERSION "\")" );
 
   db.execute( "VACUUM" );
 

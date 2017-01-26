@@ -28,6 +28,8 @@ namespace GeoNLP {
     Geocoder();
     Geocoder(const std::string &dbpath);
 
+    virtual ~Geocoder() {}
+
     bool search(const std::vector< Postal::ParseResult > &parsed_query, std::vector<GeoResult> &result);
 
     int get_levels_in_title() const { return m_levels_in_title; }
@@ -52,6 +54,10 @@ namespace GeoNLP {
     void get_name(long long int id, std::string &title, std::string &full, int levels_in_title);
 
     std::string get_type(long long int id);
+
+    virtual bool check_version();
+
+    bool check_version(const char* supported);
     
   protected:
     sqlite3pp::database m_db;
