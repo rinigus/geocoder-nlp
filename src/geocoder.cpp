@@ -23,9 +23,18 @@ bool Geocoder::load(const std::string &dbname)
 
   if (dbname != m_database_path && !m_database_open)
     drop();
+
+  try
+    {
+      m_database_open = (m_db.connect(dbname.c_str(), SQLITE_OPEN_READONLY) == SQLITE_OK);
+      m_database_path = dbname;
+    }
+  catch (sqlite3pp::database_error e)
+    {
+      std::cerr << "Geocoder exception: " << e.what() << std::endl;
+      return false;
+    }
   
-  m_database_open = (m_db.connect(dbname.c_str(), SQLITE_OPEN_READONLY) == SQLITE_OK);
-  m_database_path = dbname;
   return m_database_open;
 }
 
@@ -60,40 +69,48 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
   std::cout << "\n";
 #endif
 
-  for (const auto &r: parsed_result)
-    {
+  try { // catch SQLite exceptions
+    for (const auto &r: parsed_result)
+      {
 #ifdef GEONLP_PRINT_DEBUG
-      for (auto a: r)
-	std::cout << a << " / ";
-      std::cout << "\n";
+	for (auto a: r)
+	  std::cout << a << " / ";
+	std::cout << "\n";
 #endif
 
-      m_query_count = 0;
-      search(r, result);
+	m_query_count = 0;
+	search(r, result);
 #ifdef GEONLP_PRINT_DEBUG_QUERIES
-      std::cout << "\n";
+	std::cout << "\n";
 #endif
-    }
+      }
 
 #ifdef GEONLP_PRINT_DEBUG
-  std::cout << "\n";
+    std::cout << "\n";
 #endif
 
-  // fill the data
-  for (GeoResult &r: result)
-    {
-      get_name(r.id, r.title, r.address, m_levels_in_title);
-      r.type = get_type(r.id);
+    // fill the data
+    for (GeoResult &r: result)
+      {
+	get_name(r.id, r.title, r.address, m_levels_in_title);
+	r.type = get_type(r.id);
 
-      sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
-      qry.bind(1, r.id);
-      for (auto v: qry)
-        {
-	  // only one entry is expected
-	  v.getter() >> r.latitude >> r.longitude;
-	  break;
-        }
+	sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
+	qry.bind(1, r.id);
+	for (auto v: qry)
+	  {
+	    // only one entry is expected
+	    v.getter() >> r.latitude >> r.longitude;
+	    break;
+	  }      
+      }
+  }
+  catch (sqlite3pp::database_error e)
+    {
+      std::cerr << "Geocoder exception: " << e.what() << std::endl;
+      return false;
     }
+  
 
   return true;
 }
