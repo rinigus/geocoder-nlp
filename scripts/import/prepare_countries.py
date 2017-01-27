@@ -281,7 +281,8 @@ fmake.write("$(DOWNLOADS_DIR)/.directory:\n\tmkdir -p $(DOWNLOADS_DIR)\n\ttouch 
 all_countries = ""
 
 def pbfname(continent, country):
-    return continent + "-" + country + ".pbf"
+    cc = continent.replace("/", "-")
+    return cc + "-" + country + ".pbf"
 
 def pbfurl(continent, country):
     if country in SpecialURL: return SpecialURL[country]
