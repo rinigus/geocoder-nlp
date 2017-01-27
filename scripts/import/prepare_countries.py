@@ -14,6 +14,7 @@ Name2Country = {
     "bosnia herzegovina": "Bosnia and Herzegovina",
     "great britain": "United Kingdom",
     "macedonia": "MK",
+    "russia": "RU",
 }
 
 Countries = {
@@ -87,7 +88,7 @@ def pbfurl(continent, country):
 
 for continent in Countries.keys():
     fmake.write("$(WORLD_DIR)/" + continent + "/.directory:\n\tmkdir -p $(WORLD_DIR)/" + continent + "\n\ttouch $(WORLD_DIR)/" + continent + "/.directory\n\n")
-    
+
     for country_dwnl in Countries[continent]:
         country = country_dwnl.replace('-', ' ')
         if country in Name2Country:
@@ -96,7 +97,7 @@ for continent in Countries.keys():
             c = pycountry.countries.lookup(country)
         code2 = c.alpha_2
         name = c.name
-                    
+
         print continent, code2, name, (code2.lower() in postal_countries)
 
         sql = "$(WORLD_DIR)/" + os.path.join(continent, country + ".sqlite.bz2")
