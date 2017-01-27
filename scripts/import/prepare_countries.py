@@ -17,6 +17,10 @@ Name2Country = {
     "russia": "RU",
 }
 
+SpecialURL = {
+    "russia": "http://download.geofabrik.de/russia-latest.osm.pbf"
+}
+
 Countries = {
     "europe": [ "albania",
                 "andorra",
@@ -84,6 +88,7 @@ def pbfname(continent, country):
     return continent + "-" + country + ".pbf"
 
 def pbfurl(continent, country):
+    if country in SpecialURL: return SpecialURL[country]
     return "http://download.geofabrik.de/%s/%s-latest.osm.pbf" % (continent, country)
 
 for continent in Countries.keys():
