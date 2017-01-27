@@ -26,6 +26,9 @@ countries = []
 for l in open("countries_languages.txt", "r"):
     countries.append( l.split(':')[0] )
 
+# add Ireland together with UK to cover Ireland + Northern Ireland case
+countries.append("gb-ie")
+
 print "Loaded list of countries [%d]: " % len(countries),
 for c in countries:
     print c,

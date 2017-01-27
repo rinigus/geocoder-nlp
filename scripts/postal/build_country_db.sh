@@ -3,7 +3,7 @@
 set -e
 
 if [ $# -ne 4 ]; then
-echo "
+    echo "
 This script generates a country specific databases for use with
 libpostal routines.
 
@@ -72,24 +72,31 @@ mkdir -p "$COUNTRY_DIR/address_parser"
 mkdir -p "$COUNTRY_DIR/geodb"
 
 # Geo data
+cup=$(echo $COUNTRY_UPPER | tr "-" "\n")
 for file in geonames.tsv postal_codes.tsv; do
-    echo "Geo data preparation: $file / $COUNTRY_UPPER" 
-    grep $'\t'$COUNTRY_UPPER$'\t' "$GEODATA/$file" > "$TMPDATA/$file" || true
+    cp /dev/null "$TMPDATA/$file"
+    for C in $cup; do 
+	echo "Geo data preparation: $file / $C" 
+	grep $'\t'$C$'\t' "$GEODATA/$file" >> "$TMPDATA/$file" || true
+    done
 done
 
 echo "Geo data ready"
 
 # Addresses
 cp /dev/null "$OUTPUT_ADDRESS"
-for file in formatted_addresses_tagged.random.tsv openaddresses_formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
-    echo "Address data preparation: $file / $COUNTRY_LOWER"
-    DSPLIT="$ADDRDATA/$file-split"
-    if [ -d $DSPLIT ]; then
-	echo "Using pre-split" $file
-	cat "$ADDRDATA/$file-split/$file-$COUNTRY_LOWER" >> "$OUTPUT_ADDRESS" || true
-    else
-	grep $'\t'$COUNTRY_LOWER$'\t' "$ADDRDATA/$file" >> "$OUTPUT_ADDRESS" || true
-    fi
+clow=$(echo $COUNTRY_LOWER | tr "-" "\n")
+for C in $clow; do 
+    for file in formatted_addresses_tagged.random.tsv openaddresses_formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
+	echo "Address data preparation: $file / $C"
+	DSPLIT="$ADDRDATA/$file-split"
+	if [ -d $DSPLIT ]; then
+	    echo "Using pre-split" $file
+	    cat "$ADDRDATA/$file-split/$file-$C" >> "$OUTPUT_ADDRESS" || true
+	else
+	    grep $'\t'$C$'\t' "$ADDRDATA/$file" >> "$OUTPUT_ADDRESS" || true
+	fi
+    done
 done
 
 echo "Randomize addresses"
