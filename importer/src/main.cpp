@@ -434,12 +434,15 @@ int main(int argc, char* argv[])
 {
   if (argc<3)
     {
-      std::cerr << "importer <map directory> <sqlite database name>\n";
+      std::cerr << "importer <map directory> <sqlite database name> [<postal_country_parser_code>]\n";
       return 1;
     }
 
   std::string map = argv[1];
   std::string sqlite_filepath = argv[2];
+  std::string postal_country_parser;
+
+  if (argc > 3) postal_country_parser = argv[3];
 
   osmscout::DatabaseParameter databaseParameter;
   osmscout::DatabaseRef database(new osmscout::Database(databaseParameter));
@@ -493,6 +496,13 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS meta" );
   db.execute( "CREATE TABLE meta (key TEXT, value TEXT)" );
   db.execute( "INSERT INTO meta (key, value) VALUES (\"version\", \"" DB_VERSION "\")" );
+
+  if ( !postal_country_parser.empty() )
+    {
+      std::cout << "Recording postal parser country preference: " <<  postal_country_parser << "\n";
+      std::string cmd = "INSERT INTO meta (key, value) VALUES (\"postal:country:parser\", \"" + postal_country_parser + "\")";
+      db.execute( cmd.c_str() );
+    }
 
   db.execute( "VACUUM" );
 
