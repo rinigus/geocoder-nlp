@@ -89,25 +89,25 @@ def pbfurl(continent, country):
 for continent in Countries.keys():
     fmake.write("$(WORLD_DIR)/" + continent + "/.directory:\n\tmkdir -p $(WORLD_DIR)/" + continent + "\n\ttouch $(WORLD_DIR)/" + continent + "/.directory\n\n")
 
-    for country_dwnl in Countries[continent]:
-        country = country_dwnl.replace('-', ' ')
-        if country in Name2Country:
-            c = pycountry.countries.lookup(Name2Country[country])
+    for country in Countries[continent]:
+        country_spaces = country.replace('-', ' ')
+        if country_spaces in Name2Country:
+            c = pycountry.countries.lookup(Name2Country[country_spaces])
         else:
-            c = pycountry.countries.lookup(country)
+            c = pycountry.countries.lookup(country_spaces)
         code2 = c.alpha_2
         name = c.name
 
         print continent, code2, name, (code2.lower() in postal_countries)
 
         sql = "$(WORLD_DIR)/" + os.path.join(continent, country + ".sqlite.bz2")
-        pbf = "$(DOWNLOADS_DIR)/" + pbfname(continent, country_dwnl)
+        pbf = "$(DOWNLOADS_DIR)/" + pbfname(continent, country)
         all_countries += sql + " "
         fmake.write(sql + ": $(WORLD_DIR)/" + continent + "/.directory " + pbf +
-                    "\n\t$(BUILDER) $(DOWNLOADS_DIR)/" + pbfname(continent, country_dwnl) + " $(WORLD_DIR) " + continent + " " + country + " " + code2 + "\n\n")
+                    "\n\t$(BUILDER) $(DOWNLOADS_DIR)/" + pbfname(continent, country) + " $(WORLD_DIR) " + continent + " " + country + " " + code2 + "\n\n")
         fmake.write(pbf + ":$(DOWNLOADS_DIR)/.directory\n\twget %s -O$(DOWNLOADS_DIR)/%s || (rm -f $(DOWNLOADS_DIR)/%s && exit 1)\n\ttouch $(DOWNLOADS_DIR)/%s\n" %
-                    (pbfurl(continent, country_dwnl), pbfname(continent, country_dwnl),
-                     pbfname(continent, country_dwnl), pbfname(continent, country_dwnl)) )
+                    (pbfurl(continent, country), pbfname(continent, country),
+                     pbfname(continent, country), pbfname(continent, country)) )
 
 fmake.write("$(WORLD_DIR)/all_countries_done: " + all_countries + "\n\techo > $(WORLD_DIR)/all_countries_done\n\n")
 
