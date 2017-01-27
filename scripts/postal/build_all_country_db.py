@@ -26,8 +26,21 @@ countries = []
 for l in open("countries_languages.txt", "r"):
     countries.append( l.split(':')[0] )
 
+# add combinations to cover special cases in PBF downloads
+
 # add Ireland together with UK to cover Ireland + Northern Ireland case
 countries.append("gb-ie")
+
+countries.append("ht-do")
+countries.append("sn-gm")
+
+# gcc states
+countries.append("bh-kw-om-qa-sa-ae")
+
+countries.append("il-ps")
+countries.append("my-sg-bn")
+
+### countries list: done ###
 
 print "Loaded list of countries [%d]: " % len(countries),
 for c in countries:
