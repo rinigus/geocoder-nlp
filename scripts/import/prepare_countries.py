@@ -17,6 +17,10 @@ Name2Country = {
     "russia": "RU",
 }
 
+SpecialMaps = {
+    "ireland and northern ireland": "GB-IE",
+}
+
 SpecialURL = {
     "russia": "http://download.geofabrik.de/russia-latest.osm.pbf"
 }
@@ -44,7 +48,7 @@ Countries = {
                 "greece",
                 "hungary",
                 "iceland",
-                #"ireland-and-northern-ireland",
+                "ireland-and-northern-ireland",
                 "isle-of-man",
                 "italy",
                 #"kosovo",
@@ -96,14 +100,18 @@ for continent in Countries.keys():
 
     for country in Countries[continent]:
         country_spaces = country.replace('-', ' ')
-        if country_spaces in Name2Country:
-            c = pycountry.countries.lookup(Name2Country[country_spaces])
-        else:
-            c = pycountry.countries.lookup(country_spaces)
-        code2 = c.alpha_2
-        name = c.name
 
-        print continent, code2, name, (code2.lower() in postal_countries)
+        if country_spaces in SpecialMaps:
+            code2 = SpecialMaps[country_spaces]
+        else:
+            if country_spaces in Name2Country:
+                c = pycountry.countries.lookup(Name2Country[country_spaces])
+            else:
+                c = pycountry.countries.lookup(country_spaces)
+            code2 = c.alpha_2
+            #name = c.name
+        
+        print continent, code2, country_spaces #, (code2.lower() in postal_countries)
 
         sql = "$(WORLD_DIR)/" + os.path.join(continent, country + ".sqlite.bz2")
         pbf = "$(DOWNLOADS_DIR)/" + pbfname(continent, country)
