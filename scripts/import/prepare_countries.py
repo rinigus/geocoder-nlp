@@ -199,7 +199,12 @@ Countries = {
 
     "north-america": [ "canada",
                        "greenland",
-                       "mexico" ],
+                       "mexico",
+                       "us-midwest",
+                       "us-northeast",
+                       "us-pacific",
+                       "us-south",
+                       "us-west" ],
 
     "north-america/us": [ "alaska",
                           "alabama",
@@ -251,12 +256,7 @@ Countries = {
                           "washington",
                           "west-virginia",
                           "wisconsin",
-                          "wyoming",
-                          "us-midwest",
-                          "us-northeast",
-                          "us-pacific",
-                          "us-south",
-                          "us-west" ],
+                          "wyoming" ],
 
     "south-america": [ "argentina",
                        "bolivia",
@@ -279,6 +279,7 @@ fmake.write("\nall: $(DOWNLOADS_DIR)/.directory $(WORLD_DIR)/all_countries_done\
 fmake.write("$(DOWNLOADS_DIR)/.directory:\n\tmkdir -p $(DOWNLOADS_DIR)\n\ttouch $(DOWNLOADS_DIR)/.directory\n\n")
 
 all_countries = ""
+all_downloads = ""
 
 def pbfname(continent, country):
     cc = continent.replace("/", "-")
@@ -299,6 +300,8 @@ for continent in Countries.keys():
             code2 = SpecialMaps[country_spaces]
         elif continent in SpecialMaps:
             code2 = SpecialMaps[continent]
+        elif country_spaces.find("us ") == 0:
+            code2 = "US"
         else:
             if country_spaces in Name2Country:
                 c = pycountry.countries.lookup(Name2Country[country_spaces])
@@ -312,6 +315,7 @@ for continent in Countries.keys():
         sql = "$(WORLD_DIR)/" + os.path.join(continent, country + ".sqlite.bz2")
         pbf = "$(DOWNLOADS_DIR)/" + pbfname(continent, country)
         all_countries += sql + " "
+        all_downloads += pbf + " "
         fmake.write(sql + ": $(WORLD_DIR)/" + continent + "/.directory " + pbf +
                     "\n\t$(BUILDER) $(DOWNLOADS_DIR)/" + pbfname(continent, country) + " $(WORLD_DIR) " + continent + " " + country + " " + code2 + "\n\n")
         fmake.write(pbf + ":$(DOWNLOADS_DIR)/.directory\n\twget %s -O$(DOWNLOADS_DIR)/%s || (rm -f $(DOWNLOADS_DIR)/%s && exit 1)\n\ttouch $(DOWNLOADS_DIR)/%s\n" %
@@ -319,5 +323,6 @@ for continent in Countries.keys():
                      pbfname(continent, country), pbfname(continent, country)) )
 
 fmake.write("$(WORLD_DIR)/all_countries_done: " + all_countries + "\n\techo > $(WORLD_DIR)/all_countries_done\n\n")
+fmake.write("download: " + all_downloads + "\n\techo All downloaded\n\n")
 
 print "\nExamine generated Makefile and run make using it. See build.sh and adjust the used executables first\n"
