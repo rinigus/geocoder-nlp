@@ -267,7 +267,7 @@ Countries = {
                        "paraguay",
                        "peru",
                        "suriname",
-                       #"uruguay", # the normalization table got insanely large, have to checkout what is a problem
+                       "uruguay", 
     ],
 }
 

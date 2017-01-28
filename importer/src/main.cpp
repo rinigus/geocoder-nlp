@@ -6,8 +6,18 @@
 
 #include <map>
 #include <deque>
+#include <cctype>
 
 #define DB_VERSION "1"
+
+#define MAX_NUMBER_OF_EXPANSIONS 15 /// if there are more expansions
+                                    /// that specified, this object
+                                    /// will be dropped from
+                                    /// normalization table
+
+#define LENGTH_STARTING_SUSP_CHECK 200 /// starting from this length,
+                                       /// check wheher the string is
+                                       /// suspicious
 
 typedef long long int sqlid; /// type used by IDs in SQLite
 
@@ -32,8 +42,8 @@ public:
   {
     if ( track_children )
       {
-	m_last_child[id] = 0;
-	m_parent[id] = parent;
+        m_last_child[id] = 0;
+        m_parent[id] = parent;
       }
 
     m_last_child[parent] = id;
@@ -50,13 +60,13 @@ public:
   {
     for (auto a: m_last_child)
       {
-	sqlid id = a.first;
-	sqlid last_id = a.second;
-	if (id >= last_id) continue;
+        sqlid id = a.first;
+        sqlid last_id = a.second;
+        if (id >= last_id) continue;
 	
-	sqlite3pp::command cmd(db, "INSERT INTO hierarchy (prim_id, last_subobject) VALUES (?, ?)");
-	cmd.binder() << id << last_id;
-	cmd.execute();
+        sqlite3pp::command cmd(db, "INSERT INTO hierarchy (prim_id, last_subobject) VALUES (?, ?)");
+        cmd.binder() << id << last_id;
+        cmd.execute();
       }
   }
 
@@ -85,16 +95,16 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
       osmscout::NodeRef node;
 
       if (database->GetNodeByOffset(object.GetFileOffset(),
-				    node)) {
-	type+=node->GetType()->GetName();
-	coordinates = node->GetCoords();
+                                    node)) {
+        type+=node->GetType()->GetName();
+        coordinates = node->GetCoords();
       }
     }
   else if (object.GetType()==osmscout::RefType::refArea) {
     osmscout::AreaRef area;
 
     if (database->GetAreaByOffset(object.GetFileOffset(),
-				  area)) {
+                                  area)) {
       type+=area->GetType()->GetName();
       area->GetCenter(coordinates);
     }
@@ -103,7 +113,7 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
     osmscout::WayRef way;
 
     if (database->GetWayByOffset(object.GetFileOffset(),
-				 way)) {
+                                 way)) {
       type+=way->GetType()->GetName();
       coordinates = way->GetCoord(way->nodes.size()/2);
     }
@@ -147,10 +157,10 @@ public:
 
     sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
     cmd.binder() << id
-		 << address.name
-		 << m_parent
-		 << coordinates.GetLon()
-		 << coordinates.GetLat();
+                 << address.name
+                 << m_parent
+                 << coordinates.GetLon()
+                 << coordinates.GetLat();
     
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "Error inserting " << address.name << "\n";
@@ -188,10 +198,10 @@ public:
 
     sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
     cmd.binder() << id
-		 << poi.name
-		 << m_parent
-		 << coordinates.GetLon()
-		 << coordinates.GetLat();
+                 << poi.name
+                 << m_parent
+                 << coordinates.GetLon()
+                 << coordinates.GetLat();
     
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "Error inserting " << poi.name << "\n";
@@ -211,8 +221,8 @@ public:
 
     if ( location.objects.size() < 1 )
       {
-	std::cout << "Location " << location.name << " has no objects, skipping\n";
-	return true;
+        std::cout << "Location " << location.name << " has no objects, skipping\n";
+        return true;
       }
     
     GetObjectTypeCoor(m_database, location.objects[ location.objects.size()/2 ], type, coordinates);
@@ -221,10 +231,10 @@ public:
     
     sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
     cmd.binder() << id
-		 << location.name
-		 << m_parent
-		 << coordinates.GetLon()
-		 << coordinates.GetLat();
+                 << location.name
+                 << m_parent
+                 << coordinates.GetLon()
+                 << coordinates.GetLat();
 
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "Error inserting " << location.name << "\n";
@@ -269,10 +279,10 @@ public:
 
     sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
     cmd.binder() << id
-		 << region.name
-		 << IDs.get_id(region.parentRegionOffset)
-		 << coordinates.GetLon()
-		 << coordinates.GetLat();
+                 << region.name
+                 << IDs.get_id(region.parentRegionOffset)
+                 << coordinates.GetLon()
+                 << coordinates.GetLat();
     IDs.set_parent(id, region.parentRegionOffset, true);
     
     if (cmd.execute() != SQLITE_OK)
@@ -283,49 +293,49 @@ public:
     // record region aliases
     std::deque<std::string> saved_names; saved_names.push_back(region.name);
     if (region.aliasName.length() > 0 &&
-	find(saved_names.begin(),
-	     saved_names.end(),
-	     region.aliasName) != saved_names.end() )
+        find(saved_names.begin(),
+             saved_names.end(),
+             region.aliasName) != saved_names.end() )
       {
-	sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
 	
-	GetObjectTypeCoor(m_database, region.aliasObject, type, coordinates);
-	id = IDs.next();
+        GetObjectTypeCoor(m_database, region.aliasObject, type, coordinates);
+        id = IDs.next();
 	
-	cmd.binder() << id
-		     << region.aliasName
-		     << IDs.get_id(region.parentRegionOffset)
-		     << coordinates.GetLon()
-		     << coordinates.GetLat();
-	if (cmd.execute() != SQLITE_OK)
-	  std::cerr << "Error inserting " << region.aliasName << "\n";
+        cmd.binder() << id
+                     << region.aliasName
+                     << IDs.get_id(region.parentRegionOffset)
+                     << coordinates.GetLon()
+                     << coordinates.GetLat();
+        if (cmd.execute() != SQLITE_OK)
+          std::cerr << "Error inserting " << region.aliasName << "\n";
 	
-	write_type(m_db, id, type);
-	IDs.set_parent(id, region.parentRegionOffset);
+        write_type(m_db, id, type);
+        IDs.set_parent(id, region.parentRegionOffset);
       }
 
     for (auto alias: region.aliases)
       {
-	if ( alias.name.length() < 1 ||
-	     find(saved_names.begin(),
-		  saved_names.end(),
-		  alias.name) == saved_names.end() )
-	  continue; // skip since we saved it already
+        if ( alias.name.length() < 1 ||
+             find(saved_names.begin(),
+                  saved_names.end(),
+                  alias.name) == saved_names.end() )
+          continue; // skip since we saved it already
 
-	saved_names.push_back(alias.name);
+        saved_names.push_back(alias.name);
 	
-	sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
-	id = IDs.next();
-	cmd.binder() << id
-		     << alias.name
-		     << IDs.get_id(region.parentRegionOffset)
-		     << coordinates.GetLon()
-		     << coordinates.GetLat();
-	if (cmd.execute() != SQLITE_OK)
-	  std::cerr << "Error inserting " << alias.name << "\n";
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+        id = IDs.next();
+        cmd.binder() << id
+                     << alias.name
+                     << IDs.get_id(region.parentRegionOffset)
+                     << coordinates.GetLon()
+                     << coordinates.GetLat();
+        if (cmd.execute() != SQLITE_OK)
+          std::cerr << "Error inserting " << alias.name << "\n";
 	
-	write_type(m_db, id, type);
-	IDs.set_parent(id, region.parentRegionOffset);
+        write_type(m_db, id, type);
+        IDs.set_parent(id, region.parentRegionOffset);
       }
 
     LocVisitor loc(m_database, m_db, regionID);
@@ -377,45 +387,73 @@ void normalize_libpostal(sqlite3pp::database& db)
     {
       charbuff.resize(d.name.length() + 1);
       std::copy(d.name.c_str(), d.name.c_str() + d.name.length() + 1, charbuff.begin());
+
+      // check for sanity before we proceed with expansion
+      if ( d.name.length() > LENGTH_STARTING_SUSP_CHECK )
+        {
+          size_t digits_space = 0;
+          for (size_t i=0; i < d.name.length(); ++i)
+            if ( std::isdigit( charbuff[i] ) || std::isspace( charbuff[i] ) )
+              digits_space++;
+
+          if ( (digits_space*1.0) / d.name.length() > 0.5 )
+            {
+              std::cout << "Warning: dropping suspicious name: " << d.name << "\n";
+              continue;
+            }
+        }
+      
+  
       char **expansions = expand_address(charbuff.data(), options, &num_expansions);
 
-      for (size_t i = 0; i < num_expansions; i++)
-	{
-	  sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
-	  std::string s = expansions[i];
-	  cmd.binder() << d.id
-		       << s;
-	  if (cmd.execute() != SQLITE_OK)
-	    std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+      if ( num_expansions > MAX_NUMBER_OF_EXPANSIONS )
+        {
+          std::cout << "Warning: large number [" << num_expansions << "] of normalization expansions of " << d.name
+                    << " - dropping it from the table [" << d.id << "]\n";
+          // for (size_t i=0; i < 10 && i < num_expansions; i++)
+          //   std::cout << "   example expansion: " << expansions[i] << "\n";
+          // std::cout << "\n";
 
-	  // to cover the street names that have Dr. or the firstname
-	  // in the front of the mainly used name, add substrings into
-	  // the normalized table as well
-	  const size_t max_substrings = 2;
-	  size_t pos = 1;
-	  for (size_t sbs=0; sbs < max_substrings && pos < s.length(); ++sbs)
-	    {
-	      bool spacefound = false;
-	      for (; pos<s.length(); ++pos)
-		{
-		  char c = s[pos];
-		  if (c == ' ') spacefound = true;
-		  if (spacefound && c!=' ')
-		    break;
-		}
+          continue; // don't insert it, its probably wrong anyway
+        }
+      
+      for (size_t i = 0; i < num_expansions; i++)
+        {
+          sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
+          std::string s = expansions[i];
+          cmd.binder() << d.id
+                       << s;
+          if (cmd.execute() != SQLITE_OK)
+            std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+
+          // to cover the street names that have Dr. or the firstname
+          // in the front of the mainly used name, add substrings into
+          // the normalized table as well
+          const size_t max_substrings = 2;
+          size_t pos = 1;
+          for (size_t sbs=0; sbs < max_substrings && pos < s.length(); ++sbs)
+            {
+              bool spacefound = false;
+              for (; pos<s.length(); ++pos)
+                {
+                  char c = s[pos];
+                  if (c == ' ') spacefound = true;
+                  if (spacefound && c!=' ')
+                    break;
+                }
 	      
-	      if (pos < s.length())
-		{
-		  sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
-		  std::string s = expansions[i];
-		  cmd.binder() << d.id
-			       << s.substr(pos);
-		  if (cmd.execute() != SQLITE_OK)
-		    std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
-		}
-	    }
+              if (pos < s.length())
+                {
+                  sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
+                  std::string s = expansions[i];
+                  cmd.binder() << d.id
+                               << s.substr(pos);
+                  if (cmd.execute() != SQLITE_OK)
+                    std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+                }
+            }
 	  
-	}
+        }
 
       // Free expansions
       expansion_array_destroy(expansions, num_expansions);
@@ -467,7 +505,7 @@ int main(int argc, char* argv[])
   // db.execute( "CREATE TABLE object_alias (prim_id INTEGER, name TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))");
   db.execute( "CREATE TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
-	      "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
+              "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
 
   std::cout << "Preliminary filling of the database" << std::endl; 
   
@@ -481,9 +519,9 @@ int main(int argc, char* argv[])
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
   db.execute( "INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp" );
   db.execute( "CREATE TABLE object_type (prim_id INTEGER PRIMARY KEY, type_id INTEGER, "
-	      "FOREIGN KEY (prim_id) REFERENCES object_primary(id), FOREIGN KEY (type_id) REFERENCES type(id))" );
+              "FOREIGN KEY (prim_id) REFERENCES object_primary(id), FOREIGN KEY (type_id) REFERENCES type(id))" );
   db.execute( "INSERT INTO object_type (prim_id, type_id) "
-	      "SELECT object_type_tmp.prim_id, type.id FROM object_type_tmp JOIN type ON object_type_tmp.type=type.name" );
+              "SELECT object_type_tmp.prim_id, type.id FROM object_type_tmp JOIN type ON object_type_tmp.type=type.name" );
   db.execute( "DROP TABLE IF EXISTS object_type_tmp" );
 
   std::cout << "Normalize using libpostal" << std::endl;
