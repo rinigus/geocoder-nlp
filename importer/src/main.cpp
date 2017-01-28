@@ -10,7 +10,7 @@
 
 #define DB_VERSION "1"
 
-#define MAX_NUMBER_OF_EXPANSIONS 15 /// if there are more expansions
+#define MAX_NUMBER_OF_EXPANSIONS 65 /// if there are more expansions
                                     /// that specified, this object
                                     /// will be dropped from
                                     /// normalization table
