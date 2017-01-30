@@ -26,6 +26,23 @@ In addition to libpostal, libsqlite3 is required for the geocoder to
 function. For importer, libosmscout is required in addition to the
 libraries mentioned above.
 
+## Databases
+
+At present, the datasets required for the geocoder to function are distributed 
+via http://tiny.cc/geocodernlpdata . In the following text, the location of the 
+prepared datasets are given relative to the root of that file sharing service.
+
+If you use the geocoder with the full libpostal installation, you don't need to 
+get the libpostal datasets from that location, but can use the datasets 
+provided by libpostal. This is a default when there is no path
+specified for corresponding libpostal datasets. 
+
+To use country-specific datasets, you would have to get:
+* libpostal language parser: postal/postal-global.tar.bz2
+* libpostal country-specific database: postal/countries/SELECT THE NEEDED ONES
+
+In addition, the prepared geocoder databases are available at 
+geocoder/SELECT THE NEEDED ONES.
 
 ## Acknowledgments
 
