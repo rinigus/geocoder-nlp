@@ -425,8 +425,11 @@ void normalize_libpostal(sqlite3pp::database& db)
           cmd.binder() << d.id
                        << s;
           if (cmd.execute() != SQLITE_OK)
-            std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
-
+            {
+	      // std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+	      num_doubles_dropped++;
+	    }
+	  
           // to cover the street names that have Dr. or the firstname
           // in the front of the mainly used name, add substrings into
           // the normalized table as well
