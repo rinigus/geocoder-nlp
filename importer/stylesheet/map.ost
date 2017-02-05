@@ -1244,7 +1244,7 @@ TYPES
   TYPE amenity_building
     = AREA (EXISTS "amenity" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
       {Name, NameAlt}
-      ADDRESS
+      ADDRESS POI
       GROUP amenity, building
 
   TYPE amenity
@@ -1261,7 +1261,7 @@ TYPES
   TYPE shop
     = NODE AREA (EXISTS "shop")
       {Name, NameAlt}
-      ADDRESS
+      ADDRESS POI
 
   //
   // Tourism
@@ -1936,7 +1936,7 @@ TYPES
   TYPE building
     = AREA (EXISTS "building" AND !("building" IN ["no","false","0"]))
       {Name, NameAlt}
-      ADDRESS
+      ADDRESS POI
 
   // Addresses
   TYPE address
