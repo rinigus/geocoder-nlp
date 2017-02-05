@@ -3,7 +3,7 @@
 set -e
 
 OSMSCOUT_IMPORTER=/usr/local/osmscout/bin/Import
-OSMSCOUT_MAPSTYLE=/usr/local/osmscout/share/stylesheets/map.ost
+OSMSCOUT_MAPSTYLE=../../importer/stylesheet/map.ost
 GEOCODER_IMPORTER=../../importer/importer
 
 if [ $# -lt 5 ] ; then
