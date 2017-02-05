@@ -370,7 +370,7 @@ void normalize_libpostal(sqlite3pp::database& db)
 
   // make a new table for normalized names
   db.execute("DROP TABLE IF EXISTS normalized_name");
-  db.execute("CREATE TABLE normalized_name (prim_id INTEGER, name TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))");
+  db.execute("CREATE TABLE normalized_name (prim_id INTEGER, name TEXT NOT NULL, PRIMARY KEY (name, prim_id), FOREIGN KEY (prim_id) REFERENCES objects_primary(id))");
 
   // load libpostal
   if (!libpostal_setup() || !libpostal_setup_language_classifier())
@@ -381,6 +381,7 @@ void normalize_libpostal(sqlite3pp::database& db)
 
   // normalize all names
   size_t num_expansions;
+  size_t num_doubles_dropped = 0;
   normalize_options_t options = get_libpostal_default_options();
   std::vector<char> charbuff;
   for (tonorm &d: data)
@@ -444,12 +445,22 @@ void normalize_libpostal(sqlite3pp::database& db)
 	      
               if (pos < s.length())
                 {
-                  sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
-                  std::string s = expansions[i];
-                  cmd.binder() << d.id
-                               << s.substr(pos);
-                  if (cmd.execute() != SQLITE_OK)
-                    std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+		  try {
+		    sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
+		    std::string s = expansions[i];
+		    cmd.binder() << d.id
+				 << s.substr(pos);
+		    if (cmd.execute() != SQLITE_OK)
+		      {
+			//std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+			num_doubles_dropped++;
+		      }
+		  }
+		  catch (sqlite3pp::database_error e)
+		    {
+		      num_doubles_dropped++;
+		    }
+		  
                 }
             }
 	  
@@ -459,6 +470,8 @@ void normalize_libpostal(sqlite3pp::database& db)
       expansion_array_destroy(expansions, num_expansions);
     }
 
+  std::cout << "Redundant records skipped: " << num_doubles_dropped << "\n";
+  
   // Teardown libpostal
   libpostal_teardown();
   libpostal_teardown_language_classifier();
@@ -495,6 +508,7 @@ int main(int argc, char* argv[])
 			 
   db.execute( "PRAGMA journal_mode = OFF" );
   db.execute( "PRAGMA synchronous = OFF" );
+  db.execute( "BEGIN TRANSACTION" );
   db.execute( "DROP TABLE IF EXISTS type" );
   db.execute( "DROP TABLE IF EXISTS object_primary" );
   // db.execute( "DROP TABLE IF EXISTS object_alias" );
@@ -513,7 +527,7 @@ int main(int argc, char* argv[])
   AdminVisitor vis_admin(database, db);
   locationIndex->VisitAdminRegions(vis_admin);
   IDs.write_hierarchy(db);
-
+  
   std::cout << "Reorganizing database tables" << std::endl; 
 
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
@@ -528,8 +542,8 @@ int main(int argc, char* argv[])
   
   normalize_libpostal(db);
 
-  db.execute ( "DROP INDEX IF EXISTS idx_norm_name" );
-  db.execute ( "CREATE INDEX idx_norm_name ON normalized_name (name)" );
+  // db.execute ( "DROP INDEX IF EXISTS idx_norm_name" );
+  // db.execute ( "CREATE INDEX idx_norm_name ON normalized_name (name,prim_id)" );
 
   db.execute( "DROP TABLE IF EXISTS meta" );
   db.execute( "CREATE TABLE meta (key TEXT, value TEXT)" );
@@ -542,7 +556,9 @@ int main(int argc, char* argv[])
       db.execute( cmd.c_str() );
     }
 
+  db.execute( "END TRANSACTION" );
   db.execute( "VACUUM" );
+  db.execute( "ANALYZE" );
 
   std::cout << "Done\n";
   
