@@ -4,7 +4,7 @@
 import json, pickle
 
 root_dir = "distribution"
-url_base = "http://some_provider/bucket/"
+url_base = "http://some_provider/bucket"
 
 url_specs = {
     "base": url_base,
@@ -35,7 +35,7 @@ def uploader(dirname, targetname):
 def getprop(dirname):
     props = {}
     for p in ["size", "size-compressed", "timestamp", "version"]:
-        v = int( open(dirname + "." + p, "r").read().split()[0] )
+        v = open(dirname + "." + p, "r").read().split()[0]
         props[p] = v
     return props
 

@@ -13,5 +13,5 @@ VERSION=$2
 du -shb "$TOPACK" > "$TOPACK.size"
 bzip2 "$TOPACK"/* || bzip2 "$TOPACK"/*/*
 du -shb "$TOPACK" > "$TOPACK.size-compressed"
-date +%s > "$TOPACK.timestamp"
+date +'%Y-%m-%d_%H:%M' > "$TOPACK.timestamp"
 echo $VERSION > "$TOPACK.version"
