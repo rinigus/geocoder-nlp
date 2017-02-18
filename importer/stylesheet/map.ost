@@ -604,6 +604,7 @@ TYPES
   TYPE landuse_cemetery
     = AREA ("landuse"=="cemetery")
       {Name, NameAlt}
+      POI
       GROUP landuse
 
   TYPE landuse_cemetery_sea
@@ -615,7 +616,7 @@ TYPES
   TYPE landuse_commercial
     = NODE AREA ("landuse"=="commercial")
       {Name, NameAlt}
-      OPTIMIZE_LOW_ZOOM MERGE_AREAS
+      POI OPTIMIZE_LOW_ZOOM MERGE_AREAS
       GROUP landuse
 
   TYPE landuse_construction
@@ -626,7 +627,7 @@ TYPES
   TYPE landuse_farm
     = AREA ("landuse"=="farm")
       {Name, NameAlt}
-      OPTIMIZE_LOW_ZOOM MERGE_AREAS
+      POI OPTIMIZE_LOW_ZOOM MERGE_AREAS
       GROUP landuse
 
   TYPE landuse_farmland
@@ -648,7 +649,7 @@ TYPES
   TYPE wood
     = NODE AREA ("landuse"=="forest" OR "natural"=="wood" OR "landcover"=="trees")
       {Name, NameAlt}
-      OPTIMIZE_LOW_ZOOM MERGE_AREAS
+      POI OPTIMIZE_LOW_ZOOM MERGE_AREAS
       GROUP landuse
 
   TYPE landuse_garages
@@ -675,7 +676,7 @@ TYPES
   TYPE landuse_industrial
     = NODE AREA ("landuse"=="industrial")
       {Name, NameAlt}
-      OPTIMIZE_LOW_ZOOM MERGE_AREAS
+      POI OPTIMIZE_LOW_ZOOM MERGE_AREAS
       GROUP landuse
 
   TYPE landuse_landfill
@@ -719,7 +720,7 @@ TYPES
   TYPE landuse_recreation_ground
     = NODE AREA ("landuse"=="recreation_ground")
       {Name, NameAlt}
-      OPTIMIZE_LOW_ZOOM MERGE_AREAS
+      POI OPTIMIZE_LOW_ZOOM MERGE_AREAS
       GROUP landuse
 
   TYPE landuse_reservoir
@@ -731,7 +732,7 @@ TYPES
   TYPE landuse_residential
     = NODE AREA ("landuse"=="residential")
       {Name, NameAlt}
-      OPTIMIZE_LOW_ZOOM MERGE_AREAS
+      POI OPTIMIZE_LOW_ZOOM MERGE_AREAS
       GROUP landuse
 
   TYPE landuse_retail
@@ -754,7 +755,7 @@ TYPES
   TYPE landuse_vineyard
     = AREA ("landuse"=="vineyard")
       {Name, NameAlt}
-      MERGE_AREAS
+      POI MERGE_AREAS
       GROUP landuse
 
   //
