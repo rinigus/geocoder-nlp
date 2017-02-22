@@ -353,6 +353,7 @@ for continent in Countries.keys():
         code2, pretty_continent, pretty_country = namecode(continent, country)
 
         provided_countries[ continent + "/" + country ] = { "id": continent + "/" + country,
+                                                            "type": "territory",
                                                             "continent": pretty_continent,
                                                             "name": pretty_country,
                                                             "postal_country": { "path": "postal/countries/" + code2 },

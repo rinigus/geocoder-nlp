@@ -8,6 +8,7 @@ url_base = "http://some_provider/bucket"
 
 url_specs = {
     "base": url_base,
+    "type": "url",
     "osmscout": "osmscout-1",
     "geocoder_nlp": "geocoder-nlp-1",
     "postal_global": "postal-global-1",
@@ -18,6 +19,7 @@ dist = json.loads( open("countries.json", "r").read() )
 
 dist["postal/global"] = {
     "id": "postal/global",
+    "type": "postal/global",
     "postal_global": { "path": "postal/global" }
     }
 
