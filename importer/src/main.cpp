@@ -511,6 +511,8 @@ int main(int argc, char* argv[])
 			 
   db.execute( "PRAGMA journal_mode = OFF" );
   db.execute( "PRAGMA synchronous = OFF" );
+  db.execute( "PRAGMA cache_size = 2000000" );
+  db.execute( "PRAGMA temp_store = 2" );
   db.execute( "BEGIN TRANSACTION" );
   db.execute( "DROP TABLE IF EXISTS type" );
   db.execute( "DROP TABLE IF EXISTS object_primary" );
@@ -520,7 +522,7 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
   db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, parent INTEGER, latitude REAL, longitude REAL)");
   // db.execute( "CREATE TABLE object_alias (prim_id INTEGER, name TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))");
-  db.execute( "CREATE TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))" );
+  db.execute( "CREATE TEMPORARY TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
               "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
 
