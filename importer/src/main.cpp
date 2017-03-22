@@ -1,14 +1,21 @@
 #include <osmscout/Database.h>
 #include <osmscout/LocationService.h>
 
+#include "geocoder.h"
+
 #include <sqlite3pp.h>
 #include <libpostal/libpostal.h>
+
+#include <marisa.h>
+#include <kcpolydb.h>
 
 #include <map>
 #include <deque>
 #include <cctype>
+#include <fstream>
+#include <algorithm>
 
-#define DB_VERSION "1"
+#define DB_VERSION "2"
 
 #define MAX_NUMBER_OF_EXPANSIONS 85 /// if there are more expansions
                                     /// that specified, this object
@@ -155,7 +162,7 @@ public:
     GetObjectTypeCoor(m_database, address.object, type, coordinates);
     id = IDs.next();
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << address.name
                  << m_parent
@@ -196,7 +203,7 @@ public:
     GetObjectTypeCoor(m_database, poi.object, type, coordinates);
     id = IDs.next();
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << poi.name
                  << m_parent
@@ -229,7 +236,7 @@ public:
     locID = id = IDs.next();
     IDs.set_id(location.locationOffset, id);
     
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << location.name
                  << m_parent
@@ -277,7 +284,7 @@ public:
     regionID = id = IDs.next();
     IDs.set_id(region.regionOffset, id);
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << region.name
                  << IDs.get_id(region.parentRegionOffset)
@@ -297,7 +304,7 @@ public:
              saved_names.end(),
              region.aliasName) != saved_names.end() )
       {
-        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
 	
         GetObjectTypeCoor(m_database, region.aliasObject, type, coordinates);
         id = IDs.next();
@@ -324,7 +331,7 @@ public:
 
         saved_names.push_back(alias.name);
 	
-        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
         id = IDs.next();
         cmd.binder() << id
                      << alias.name
@@ -360,7 +367,7 @@ void normalize_libpostal(sqlite3pp::database& db)
   };
 
   std::deque<tonorm> data;
-  sqlite3pp::query qry(db, "SELECT id, name FROM object_primary");
+  sqlite3pp::query qry(db, "SELECT id, name FROM object_primary_tmp");
   for (auto v : qry)
     {
       tonorm d;
@@ -370,7 +377,7 @@ void normalize_libpostal(sqlite3pp::database& db)
 
   // make a new table for normalized names
   db.execute("DROP TABLE IF EXISTS normalized_name");
-  db.execute("CREATE TABLE normalized_name (prim_id INTEGER, name TEXT NOT NULL, PRIMARY KEY (name, prim_id), FOREIGN KEY (prim_id) REFERENCES objects_primary(id))");
+  db.execute("CREATE TEMPORARY TABLE normalized_name (prim_id INTEGER, name TEXT NOT NULL, PRIMARY KEY (name, prim_id))");
 
   // load libpostal
   if (!libpostal_setup() || !libpostal_setup_language_classifier())
@@ -480,6 +487,96 @@ void normalize_libpostal(sqlite3pp::database& db)
   libpostal_teardown_language_classifier();
 }
 
+////////////////////////////////////////////////////////////////////////////
+/// Libpostal normalization with search string expansion
+void normalized_to_final(sqlite3pp::database& db, std::string path)
+{
+  std::cout << "Inserting normalized data into MARISA trie" << std::endl;
+  
+  marisa::Keyset keyset;
+
+  {
+    sqlite3pp::query qry(db, "SELECT name FROM normalized_name");
+    for (auto v : qry)
+      {
+        std::string name;
+        v.getter() >> name;
+        keyset.push_back(name.c_str());
+      }
+  }
+  
+  marisa::Trie trie;
+  trie.build(keyset);
+  trie.save(GeoNLP::Geocoder::name_normalized_trie(path).c_str());
+
+  struct norm
+  {
+    std::string name;
+    sqlid prim_id;
+  };
+
+  std::deque<norm> data;
+  {
+    sqlite3pp::query qry(db, "SELECT name, prim_id FROM normalized_name");
+    for (auto v : qry)
+      {
+        norm d;
+        v.getter() >> d.name >> d.prim_id;
+        data.push_back(d);
+      }
+  }
+
+  std::map< GeoNLP::Geocoder::index_id_key, std::vector<GeoNLP::Geocoder::index_id_value> > bdata;
+  for (auto d: data)
+    {
+      marisa::Agent agent;
+      agent.set_query(d.name.c_str());
+      if (trie.lookup(agent))
+        {
+          GeoNLP::Geocoder::index_id_key k = agent.key().id();
+          if ( bdata.count(k) == 0 ) bdata[k] = std::vector<GeoNLP::Geocoder::index_id_value>();
+          bdata[k].push_back( d.prim_id );
+        }
+      else
+        {
+          std::cerr << "Error: cannot find in MARISA trie: " <<  d.name << std::endl;          
+        }
+    }
+
+  {
+    // create the database object
+    kyotocabinet::PolyDB db;
+    
+    // open the database
+    if (!db.open(GeoNLP::Geocoder::name_normalized_id(path).c_str(),
+                 kyotocabinet::PolyDB::OWRITER | kyotocabinet::PolyDB::OTRUNCATE))
+      {
+        std::cerr << "open error: " << db.error().name() << std::endl;
+        return;
+      }
+
+    std::vector<std::string> keys;
+    for (auto a: bdata)
+      keys.push_back( GeoNLP::Geocoder::make_id_key(a.first) );
+
+    std::sort( keys.begin(), keys.end() );;
+    
+    for (auto key: keys)
+      {
+        std::string value = GeoNLP::Geocoder::make_id_value( bdata[GeoNLP::Geocoder::get_id_key(key)] );
+        if (!db.set(key, value))
+          {
+            std::cerr << "set error: " << db.error().name() << std::endl;
+            return;
+          }
+      }
+
+    db.close();
+  }
+
+  db.execute("DROP TABLE IF EXISTS normalized_name");
+}
+
 
 ////////////////////////////////////////////////////////////////////////////
 // MAIN
@@ -488,12 +585,12 @@ int main(int argc, char* argv[])
 {
   if (argc<3)
     {
-      std::cerr << "importer <map directory> <sqlite database name> [<postal_country_parser_code>]\n";
+      std::cerr << "importer <map directory> <database name> [<postal_country_parser_code>]\n";
       return 1;
     }
 
   std::string map = argv[1];
-  std::string sqlite_filepath = argv[2];
+  std::string database_path = argv[2];
   std::string postal_country_parser;
 
   if (argc > 3) postal_country_parser = argv[3];
@@ -507,7 +604,7 @@ int main(int argc, char* argv[])
       return 1;
     }
 
-  sqlite3pp::database db(sqlite_filepath.c_str());
+  sqlite3pp::database db(GeoNLP::Geocoder::name_primary(database_path).c_str());
 			 
   db.execute( "PRAGMA journal_mode = OFF" );
   db.execute( "PRAGMA synchronous = OFF" );
@@ -516,12 +613,12 @@ int main(int argc, char* argv[])
   db.execute( "BEGIN TRANSACTION" );
   db.execute( "DROP TABLE IF EXISTS type" );
   db.execute( "DROP TABLE IF EXISTS object_primary" );
-  // db.execute( "DROP TABLE IF EXISTS object_alias" );
+  db.execute( "DROP TABLE IF EXISTS object_primary_tmp" );
   db.execute( "DROP TABLE IF EXISTS object_type" );
   db.execute( "DROP TABLE IF EXISTS object_type_tmp" );
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
-  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, parent INTEGER, latitude REAL, longitude REAL)");
-  // db.execute( "CREATE TABLE object_alias (prim_id INTEGER, name TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))");
+
+  db.execute( "CREATE TEMPORARY TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, parent INTEGER, latitude REAL, longitude REAL)");
   db.execute( "CREATE TEMPORARY TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
               "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
@@ -537,18 +634,20 @@ int main(int argc, char* argv[])
 
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
   db.execute( "INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp" );
-  db.execute( "CREATE TABLE object_type (prim_id INTEGER PRIMARY KEY, type_id INTEGER, "
-              "FOREIGN KEY (prim_id) REFERENCES object_primary(id), FOREIGN KEY (type_id) REFERENCES type(id))" );
-  db.execute( "INSERT INTO object_type (prim_id, type_id) "
-              "SELECT object_type_tmp.prim_id, type.id FROM object_type_tmp JOIN type ON object_type_tmp.type=type.name" );
-  db.execute( "DROP TABLE IF EXISTS object_type_tmp" );
+  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, "
+              "FOREIGN KEY (type_id) REFERENCES type(id))");
+  
+  db.execute( "INSERT INTO object_primary (id, name, parent, type_id, latitude, longitude) "
+              "SELECT p.id, p.name, p.parent, type.id, p.latitude, p.longitude FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
+              "JOIN type ON tt.type=type.name" );
 
   std::cout << "Normalize using libpostal" << std::endl;
   
   normalize_libpostal(db);
-
-  // db.execute ( "DROP INDEX IF EXISTS idx_norm_name" );
-  // db.execute ( "CREATE INDEX idx_norm_name ON normalized_name (name,prim_id)" );
+  normalized_to_final(db, database_path);
+  
+  db.execute ( "DROP INDEX IF EXISTS idx_norm_name" );
+  db.execute ( "CREATE INDEX idx_norm_name ON normalized_name (name,prim_id)" );
 
   db.execute( "DROP TABLE IF EXISTS meta" );
   db.execute( "CREATE TABLE meta (key TEXT, value TEXT)" );

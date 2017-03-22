@@ -264,7 +264,10 @@ bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &r
       address_parser_response_t *parsed = parse_address(charbuff.data(), options_parse);
       nonormalization.clear();
       for (size_t j = 0; j < parsed->num_components; j++)
-	nonormalization[ parsed->labels[j] ] = parsed->components[j];
+        {
+          std::vector<std::string> pc; pc.push_back(parsed->components[j]);
+          nonormalization[ parsed->labels[j] ] = pc;
+        }
       address_parser_response_destroy(parsed);
 
       expand(nonormalization, result);
@@ -280,7 +283,10 @@ bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &r
         {
 	  ParseResult prim;
 	  for (size_t j = 0; j < hier.size(); j++)
-	    prim[ primitive_key(j) ] = hier[hier.size()-j-1];
+            {
+              std::vector<std::string> pc; pc.push_back(hier[hier.size()-j-1]);
+              prim[ primitive_key(j) ] = pc;
+            }
 
 	  expand(prim, result);
         }
@@ -315,39 +321,36 @@ void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseR
   std::vector< std::string > address_keys;
   for (const auto i: input)
     {
-      const std::string &tonorm = i.second;
-      charbuff.resize(tonorm.length() + 1);
-      std::copy(tonorm.c_str(), tonorm.c_str() + tonorm.length() + 1, charbuff.begin());
+      // in practice, its only one element at ParseResult at this stage
+      for (const std::string tonorm: i.second)
+        {
+          charbuff.resize(tonorm.length() + 1);
+          std::copy(tonorm.c_str(), tonorm.c_str() + tonorm.length() + 1, charbuff.begin());
 
-      char **expansions = expand_address(charbuff.data(), options_norm, &num_expansions);
-      std::vector< std::string > norm;
-      for (size_t j = 0; j < num_expansions; j++)
-	norm.push_back(expansions[j]);
+          char **expansions = expand_address(charbuff.data(), options_norm, &num_expansions);
+          std::vector< std::string > norm;
+          for (size_t j = 0; j < num_expansions; j++)
+            norm.push_back(expansions[j]);
 
-      expansion_array_destroy(expansions, num_expansions);
+          expansion_array_destroy(expansions, num_expansions);
 
-      address_expansions.push_back(norm);
-      address_keys.push_back(i.first);
+          address_expansions.push_back(norm);
+          address_keys.push_back(i.first);
+        }
     }
 
-  std::vector< std::vector< std::string > > address_expansions_combos;
-  cart_product(address_expansions_combos, address_expansions);
-
-  for (const auto &ae: address_expansions_combos)
-    {
-      ParseResult r;
-      for (size_t i=0; i < address_keys.size(); ++i)
-	r[ address_keys[i] ] = ae[i];
-      result.push_back(r);
-    }
+  ParseResult r;
+  for (size_t i=0; i < address_keys.size(); ++i)
+    r[ address_keys[i] ] = address_expansions[i];
+  result.push_back(r);
 }
 
-void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<std::vector<std::string> > &h)
+void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hierarchy> &h)
 {
   h.clear();
   for (const ParseResult &r: p)
     {
-      std::vector<std::string> h_result;
+      Hierarchy h_result;
 #define ADDIFHAS(k) { ParseResult::const_iterator it = r.find(k); if (it != r.end()) h_result.push_back(it->second); }
 
       ADDIFHAS(ADDRESS_PARSER_LABEL_COUNTRY);
