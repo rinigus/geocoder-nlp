@@ -2,6 +2,7 @@
 
 #include <sstream>
 #include <deque>
+#include <set>
 #include <iostream>
 
 using namespace GeoNLP;
@@ -98,7 +99,7 @@ void Geocoder::drop()
 
 bool Geocoder::check_version()
 {
-  return check_version("1");
+  return check_version("2");
 }
   
 bool Geocoder::check_version(const char *supported)
@@ -141,84 +142,115 @@ static std::string v2s(const std::vector<std::string> &v)
   return s;
 }
 
-// bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)
-// {
-//   if (!m_database_open)
-//     return false;
+bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)
+{
+  if (!m_database_open)
+    return false;
   
-//   // parse query by libpostal
-//   std::vector< Postal::Hierarchy > parsed_result;
-//   Postal::result2hierarchy(parsed_query, parsed_result);
+  // parse query by libpostal
+  std::vector< Postal::Hierarchy > parsed_result;
+  Postal::result2hierarchy(parsed_query, parsed_result);
 
-//   result.clear();
-//   m_levels_resolved = 0;
+  result.clear();
+  m_levels_resolved = 0;
 
-// #ifdef GEONLP_PRINT_DEBUG
-//   std::cout << "Search hierarchies:\n";
-// #endif
-// #ifdef GEONLP_PRINT_DEBUG_QUERIES
-//   std::cout << "\n";
-// #endif
+#ifdef GEONLP_PRINT_DEBUG
+  std::cout << "Search hierarchies:\n";
+#endif
+#ifdef GEONLP_PRINT_DEBUG_QUERIES
+  std::cout << "\n";
+#endif
 
-//   try { // catch and process SQLite and other exceptions
-//     for (const auto &r: parsed_result)
-//       {
-// #ifdef GEONLP_PRINT_DEBUG
-// 	for (auto a: r)
-// 	  std::cout << v2s(a) << " / ";
-// 	std::cout << "\n";
-// #endif
+  try { // catch and process SQLite and other exceptions
+    for (const auto &r: parsed_result)
+      {
+#ifdef GEONLP_PRINT_DEBUG
+	for (auto a: r)
+	  std::cout << v2s(a) << " / ";
+	std::cout << "\n";
+#endif
 
-// 	m_query_count = 0;
-//         if (r.size() >= m_levels_resolved)
-//           search(r, result);
-// #ifdef GEONLP_PRINT_DEBUG_QUERIES
-//         else
-//           std::cout << "Skipping hierarchy since search result already has more levels than provided\n";
-// #endif
-// #ifdef GEONLP_PRINT_DEBUG_QUERIES
-// 	std::cout << "\n";
-// #endif
-//       }
+	m_query_count = 0;
+        if (r.size() >= m_levels_resolved)
+          search(r, result);
+#ifdef GEONLP_PRINT_DEBUG_QUERIES
+        else
+          std::cout << "Skipping hierarchy since search result already has more levels than provided\n";
+#endif
+#ifdef GEONLP_PRINT_DEBUG_QUERIES
+	std::cout << "\n";
+#endif
+      }
 
-// #ifdef GEONLP_PRINT_DEBUG
-//     std::cout << "\n";
-// #endif
+#ifdef GEONLP_PRINT_DEBUG
+    std::cout << "\n";
+#endif
 
-//     // fill the data
-//     for (GeoResult &r: result)
-//       {
-// 	get_name(r.id, r.title, r.address, m_levels_in_title);
-// 	r.type = get_type(r.id);
+    // fill the data
+    for (GeoResult &r: result)
+      {
+	get_name(r.id, r.title, r.address, m_levels_in_title);
+	r.type = get_type(r.id);
 
-// 	sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
-// 	qry.bind(1, r.id);
-// 	for (auto v: qry)
-// 	  {
-// 	    // only one entry is expected
-// 	    v.getter() >> r.latitude >> r.longitude;
-// 	    break;
-// 	  }      
-//       }
-//   }
-//   catch (sqlite3pp::database_error e)
-//     {
-//       std::cerr << "Geocoder exception: " << e.what() << std::endl;
-//       return false;
-//     }
+	sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
+	qry.bind(1, r.id);
+	for (auto v: qry)
+	  {
+	    // only one entry is expected
+	    v.getter() >> r.latitude >> r.longitude;
+	    break;
+	  }      
+      }
+  }
+  catch (sqlite3pp::database_error e)
+    {
+      std::cerr << "Geocoder exception: " << e.what() << std::endl;
+      return false;
+    }
   
 
-//   return true;
-// }
+  return true;
+}
 
-// bool Geocoder::search(const Postal::Hierarchy &parsed,
-//                       std::vector<Geocoder::GeoResult> &result, size_t level,
-//                       long long int range0, long long int range1)
-// {
-//   if ( level >= parsed.size() || (m_max_queries_per_hierarchy>0 && m_query_count > m_max_queries_per_hierarchy) )
-//     return false;
 
-//   m_query_count++;
+bool Geocoder::search(const Postal::Hierarchy &parsed,
+                      std::vector<Geocoder::GeoResult> &result, size_t level,
+                      long long int range0, long long int range1)
+{
+  if ( level >= parsed.size() || (m_max_queries_per_hierarchy>0 && m_query_count > m_max_queries_per_hierarchy) )
+    return false;
+
+  m_query_count++;
+
+  std::set<index_id_value> ids;
+  for (const std::string s: parsed[level])
+    {
+      marisa::Agent agent;
+      agent.set_query(s.c_str());
+      while (m_trie_norm.predictive_search(agent))
+        {
+          std::cout.write(agent.key().ptr(), agent.key().length());
+          std::cout << ": " << agent.key().id() << " - ";
+
+          std::string val;
+          if ( m_database_norm_id.get( make_id_key( agent.key().id() ), &val) )
+            {
+              size_t sz = get_id_number_of_values(val);
+              for (size_t i=0; i < sz; ++i)
+                {
+                  index_id_value id = get_id_value(val, i);
+                  std::cout << id << " ";
+                  ids.insert(id);
+                }
+              std::cout << "\n";
+            }
+          else
+            {
+              std::cerr << "Internal inconsistency of the databases: TRIE " << agent.key().id() << "\n";
+            }
+        }
+    }
+  return false;
 
 //   std::string extra;
 //   if (level > 0)
@@ -310,50 +342,51 @@ static std::string v2s(const std::vector<std::string> &v)
 //     }
 
 //   return ids.size() > 0;
-// }
-
-// void Geocoder::get_name(long long id, std::string &title, std::string &full, int levels_in_title)
-// {
-//   long long int parent;
-//   std::string name;
-
-//   sqlite3pp::query qry(m_db, "SELECT name, parent FROM object_primary WHERE id=?");
-//   qry.bind(1, id);
-//   for (auto v: qry)
-//     {
-//       // only one entry is expected
-//       v.getter() >> name >> parent;
-
-//       if (!full.empty()) full += ", ";
-//       full += name;
-
-//       if (levels_in_title > 0)
-//         {
-// 	  if (!title.empty()) title += ", ";
-// 	  title += name;
-//         }
-
-//       get_name(parent, title, full, levels_in_title-1);
-//       return;
-//     }
-// }
+}
 
 
-// std::string Geocoder::get_type(long long id)
-// {
-//   std::string name;
+void Geocoder::get_name(long long id, std::string &title, std::string &full, int levels_in_title)
+{
+  long long int parent;
+  std::string name;
 
-//   sqlite3pp::query qry(m_db, "SELECT t.name FROM object_type o JOIN type t ON t.id=o.type_id WHERE o.prim_id=?");
-//   qry.bind(1, id);
+  sqlite3pp::query qry(m_db, "SELECT name, parent FROM object_primary WHERE id=?");
+  qry.bind(1, id);
+  for (auto v: qry)
+    {
+      // only one entry is expected
+      v.getter() >> name >> parent;
+
+      if (!full.empty()) full += ", ";
+      full += name;
+
+      if (levels_in_title > 0)
+        {
+	  if (!title.empty()) title += ", ";
+	  title += name;
+        }
+
+      get_name(parent, title, full, levels_in_title-1);
+      return;
+    }
+}
+
+
+std::string Geocoder::get_type(long long id)
+{
+  std::string name;
+
+  sqlite3pp::query qry(m_db, "SELECT t.name FROM object_type o JOIN type t ON t.id=o.type_id WHERE o.prim_id=?");
+  qry.bind(1, id);
   
-//   for (auto v: qry)
-//     {
-//       std::string n;
-//       v.getter() >> n;
+  for (auto v: qry)
+    {
+      std::string n;
+      v.getter() >> n;
 
-//       if (!name.empty()) name += ", ";
-//       name += n;
-//     }
+      if (!name.empty()) name += ", ";
+      name += n;
+    }
 
-//   return name;
-// }
+  return name;
+}
