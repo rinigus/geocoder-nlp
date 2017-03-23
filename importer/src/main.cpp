@@ -549,7 +549,7 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
     
     // open the database
     if (!db.open(GeoNLP::Geocoder::name_normalized_id(path).c_str(),
-                 kyotocabinet::PolyDB::OWRITER | kyotocabinet::PolyDB::OTRUNCATE))
+                 kyotocabinet::PolyDB::OWRITER | kyotocabinet::PolyDB::OCREATE))
       {
         std::cerr << "open error: " << db.error().name() << std::endl;
         return;
