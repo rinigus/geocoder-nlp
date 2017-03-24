@@ -4,6 +4,7 @@
 #include <deque>
 #include <set>
 #include <iostream>
+#include <algorithm>
 
 using namespace GeoNLP;
 
@@ -245,15 +246,22 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
           std::string val;
           if ( m_database_norm_id.get( make_id_key( agent.key().id() ), &val) )
             {
-              size_t sz = get_id_number_of_values(val);
-              for (size_t i=0; i < sz; ++i)
+              index_id_value *idx, *idx1;
+              if ( level == 0 )
                 {
-                  long long int id = get_id_value(val, i);
-                  if ( level == 0 || ( id > range0 && id <= range1 ) )
+                }
+              if ( !get_id_range(val, range0, range1,
+                                &idx, &idx1) )
+                {
+                  for (; idx < idx1; ++idx)
                     {
-                      IntermediateResult r( std::string(agent.key().ptr(), agent.key().length()),
-                                            id );
-                      search_result.push_back(r);
+                      long long int id = *idx;
+                      if ( level == 0 || ( id > range0 && id <= range1 ) )
+                        {
+                          IntermediateResult r( std::string(agent.key().ptr(), agent.key().length()),
+                                                id );
+                          search_result.push_back(r);
+                        }
                     }
                 }
             }
@@ -375,4 +383,22 @@ std::string Geocoder::get_type(long long id)
     }
 
   return name;
+}
+
+
+bool Geocoder::get_id_range(std::string &v, index_id_value range0, index_id_value range1,
+                            index_id_value* *idx0, index_id_value* *idx1)
+{
+  size_t sz = get_id_number_of_values(v);
+  index_id_value* v0 = (index_id_value*)v.data();
+  if (sz == 0)
+    return false;
+
+  *idx0 = std::lower_bound(v0, v0 + sz, range0);
+  if (*idx0 - v0 >= sz) return false;
+  
+  *idx1 = std::upper_bound(v0, v0 + sz, range1);
+  if (*idx1 - v0 >= sz && *(v0) > range1 ) return false;
+
+  return true;
 }

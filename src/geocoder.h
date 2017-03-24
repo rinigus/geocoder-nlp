@@ -85,6 +85,9 @@ namespace GeoNLP {
       return v.size() / sizeof(index_id_value);
     }
 
+    static bool get_id_range(std::string &v, index_id_value range0, index_id_value range1,
+                             index_id_value* *idx0, index_id_value* *idx1);
+
   protected:
     bool search(const Postal::Hierarchy &parsed, std::vector<GeoResult> &result, size_t level=0,
                 long long int range0=0, long long int range1=0);
