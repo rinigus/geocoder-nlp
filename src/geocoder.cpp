@@ -56,6 +56,10 @@ bool Geocoder::load(const std::string &dbname)
           error = true;
         }
       
+      // Limit Kyoto Cabinet caches to 32+32MB
+      m_database_norm_id.tune_map(32LL*1024LL*1024LL);        // 64MB default
+      m_database_norm_id.tune_page_cache(32LL*1024LL*1024LL); // 64MB default
+
       if ( !error &&
            !m_database_norm_id.open(name_normalized_id(m_database_path).c_str(),
                                     kyotocabinet::PolyDB::OREADER | kyotocabinet::PolyDB::ONOLOCK ) )
