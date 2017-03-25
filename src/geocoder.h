@@ -4,9 +4,12 @@
 #include "postal.h"
 
 #include <sqlite3pp.h>
+#include <marisa.h>
+#include <kcpolydb.h>
 
 #include <vector>
 #include <string>
+#include <cctype>
 
 namespace GeoNLP {
 
@@ -23,6 +26,9 @@ namespace GeoNLP {
       std::string type;
       size_t levels_resolved;
     };
+
+    typedef uint32_t index_id_key;
+    typedef uint32_t index_id_value;
 
   public:
     Geocoder();
@@ -47,8 +53,43 @@ namespace GeoNLP {
 
     operator bool() const { return m_database_open; }
 
+  public:
+    static std::string name_primary(const std::string &dname);
+    static std::string name_normalized_trie(const std::string &dname);
+    static std::string name_normalized_id(const std::string &dname);
+
+    // interaction with key/value database
+    static std::string make_id_key(index_id_key key)
+    {
+      return std::string( (char*)&key, sizeof(key) );
+    }
+    
+    static std::string make_id_value(const std::vector<index_id_value> v)
+    {
+      return std::string( (char*)v.data(), sizeof(index_id_value) * v.size() );
+    }
+
+    static index_id_key get_id_key(const std::string &v)
+    {
+      return *( (index_id_key*)v.data() );
+    }
+
+    static index_id_value get_id_value(const std::string &v, size_t index)
+    {
+      index_id_value *p = (index_id_value*)v.data();
+      return p[index];
+    }
+
+    static size_t get_id_number_of_values(const std::string &v)
+    {
+      return v.size() / sizeof(index_id_value);
+    }
+
+    static bool get_id_range(std::string &v, bool full_range, index_id_value range0, index_id_value range1,
+                             index_id_value* *idx0, index_id_value* *idx1);
+
   protected:
-    bool search(const std::vector<std::string> &parsed, std::vector<GeoResult> &result, size_t level=0,
+    bool search(const Postal::Hierarchy &parsed, std::vector<GeoResult> &result, size_t level=0,
                 long long int range0=0, long long int range1=0);
 
     void get_name(long long int id, std::string &title, std::string &full, int levels_in_title);
@@ -63,6 +104,9 @@ namespace GeoNLP {
     sqlite3pp::database m_db;
     std::string m_database_path;
     bool m_database_open = false;
+
+    kyotocabinet::PolyDB m_database_norm_id;
+    marisa::Trie m_trie_norm;
     
     int m_levels_in_title = 2;
     size_t m_max_queries_per_hierarchy = 0;

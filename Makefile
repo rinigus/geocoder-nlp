@@ -11,10 +11,10 @@ LIBPOSTAL_LIB=-l:libpostal.a -l:libsnappy.a
 #SQLITE_LIB=-lsqlite3
 SQLITE_LIB=-l:libsqlite3.a
 
-LD_EXTRA_OPTIONS += -pthread -ldl -static-libgcc -static-libstdc++
+LD_EXTRA_OPTIONS += -pthread -lmarisa -lkyotocabinet -ldl -static-libgcc -static-libstdc++
 
-#CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG_QUERIES
-#CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG
+CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG_QUERIES
+CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG
 
 ######################################################
 

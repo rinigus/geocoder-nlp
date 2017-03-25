@@ -27,31 +27,44 @@ int main(int argc, char *argv[])
   Postal::ParseResult nonorm;
 
   postal.set_postal_datadir(argv[2], argv[3]);
-  //postal.add_language("de");
-  //postal.add_language("et");
-  //postal.add_language("en");
-
+  postal.add_language("de");
+  postal.add_language("et");
+  postal.add_language("en");
+  postal.set_initialize_every_call(true);
+  
   postal.parse(query, parsed_query, nonorm);
 
   std::cout << "\nAddress parsing before full normalization:\n\n";
   for (auto v: nonorm)
-    std::cout << v.first << " " << v.second << "\n";
+    {
+      std::cout << v.first << " ";
+      for (auto k: v.second) std::cout << k << " ";
+      std::cout << "\n";
+    }
   std::cout << "\n";
 
   std::cout << "Normalization:\n\n";
   for (auto r: parsed_query)
     {
       for (auto v: r)
-	std::cout << v.first << " " << v.second << "\n";
+        {
+          std::cout << v.first << " ";
+          for (auto k: v.second) std::cout << k << " ";
+          std::cout << "\n";
+        }
       std::cout << "\n";
     }
 
+  std::cout << std::endl;
+  
   Geocoder geo(argv[1]);
   geo.set_max_queries_per_hierarchy(25);
   geo.set_max_results(25);
 
   std::vector<Geocoder::GeoResult> result;
 
+  std::cout << "Geocoder loaded" << std::endl;
+  
   geo.search(parsed_query, result);
 
   std::cout << std::setprecision(8);

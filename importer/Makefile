@@ -1,4 +1,5 @@
 
+
 ######################################################
 # Compiler and libraries
 CXX := g++
@@ -23,11 +24,11 @@ APPNAME := importer
 SRCSUBDIR := src
 OBJSUBDIR := obj
 
-INCLUDE  = $(LIBPOSTAL_INCLUDE) -I../thirdparty/sqlite3pp/headeronly_src -I$(SRCSUBDIR) -I/usr/local/libosmscout/include
-LIBRARIES += $(LIBPOSTAL_LIB) $(SQLITE_LIB) -losmscout
+INCLUDE  = $(LIBPOSTAL_INCLUDE) -I../src -I../thirdparty/sqlite3pp/headeronly_src -I$(SRCSUBDIR) -I/usr/local/libosmscout/include
+LIBRARIES += $(LIBPOSTAL_LIB) $(SQLITE_LIB) -losmscout -lmarisa -lkyotocabinet
 
 OBJS	= $(patsubst $(SRCSUBDIR)/%.cpp,$(OBJSUBDIR)/%.o,$(wildcard $(SRCSUBDIR)/*.cpp)) \
-	  $(patsubst demo/%.cpp,$(OBJSUBDIR)/demo_%.o,$(wildcard demo/*.cpp))
+	  $(patsubst ../src/%.cpp,$(OBJSUBDIR)/main_%.o,$(wildcard ../src/*.cpp))
 
 CXX_EXTRA_OPTIONS += -std=c++11
 CXXFLAGS := -O2 -g $(EXTRA_OPTIONS) $(CXX_EXTRA_OPTIONS) $(INCLUDE)  
@@ -61,7 +62,7 @@ $(OBJSUBDIR)/%.o: $(SRCSUBDIR)/%.cpp
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<
 	@echo
 
-$(OBJSUBDIR)/demo_%.o: demo/%.cpp 
+$(OBJSUBDIR)/main_%.o: ../src/%.cpp 
 	@echo
 	@echo "------------ $< "
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<

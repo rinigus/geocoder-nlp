@@ -13,11 +13,12 @@ namespace GeoNLP {
     Postal();
     ~Postal();
 
-    typedef std::map< std::string, std::string > ParseResult;
+    typedef std::map< std::string, std::vector<std::string> > ParseResult;
+    typedef std::vector< std::vector<std::string> > Hierarchy;
 
-    bool parse(const std::string &input, std::vector< ParseResult > &parsed, Postal::ParseResult &nonormalization);
+    bool parse(const std::string &input, std::vector<Postal::ParseResult> &parsed, ParseResult &nonormalization);
 
-    static void result2hierarchy(const std::vector< ParseResult > &pr, std::vector< std::vector<std::string> > &h);
+    static void result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hierarchy> &h);
 
     bool get_initialize_every_call() const { return m_initialize_for_every_call; }
     void set_initialize_every_call(bool v) { m_initialize_for_every_call = v; }
