@@ -219,7 +219,8 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
                       std::vector<Geocoder::GeoResult> &result, size_t level,
                       long long int range0, long long int range1)
 {
-  if ( level >= parsed.size() || (m_max_queries_per_hierarchy>0 && m_query_count > m_max_queries_per_hierarchy) )
+  if ( level >= parsed.size() ||
+       (m_max_queries_per_hierarchy>0 && m_query_count > m_max_queries_per_hierarchy) )
     return false;
 
   m_query_count++;
@@ -276,6 +277,9 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
 
       if (ids_explored.count(id) > 0)
         continue; // has been looked into it already
+
+      if (parsed.size() < m_levels_resolved || (parsed.size()==m_levels_resolved && result.size() >= m_max_results))
+        break; // this search cannot add more results
       
       ids_explored.insert(id);
       
@@ -308,7 +312,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
 	      m_levels_resolved = levels_resolved;
             }
 
-	  if (m_levels_resolved == levels_resolved && (m_max_results==0 || result.size() < m_max_results))
+          if (m_levels_resolved == levels_resolved && (result.size() < m_max_results))
             {
 	      bool have_already = false;
 	      for (const auto &r: result)
