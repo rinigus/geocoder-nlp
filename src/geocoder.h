@@ -5,7 +5,7 @@
 
 #include <sqlite3pp.h>
 #include <marisa.h>
-#include <kcpolydb.h>
+#include <kchashdb.h>
 
 #include <vector>
 #include <string>
@@ -105,7 +105,7 @@ namespace GeoNLP {
     std::string m_database_path;
     bool m_database_open = false;
 
-    kyotocabinet::TreeDB m_database_norm_id;
+    kyotocabinet::HashDB m_database_norm_id;
     marisa::Trie m_trie_norm;
     
     int m_levels_in_title = 2;

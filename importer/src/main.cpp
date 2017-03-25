@@ -7,7 +7,7 @@
 #include <libpostal/libpostal.h>
 
 #include <marisa.h>
-#include <kcpolydb.h>
+#include <kchashdb.h>
 
 #include <map>
 #include <deque>
@@ -545,11 +545,15 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
 
   {
     // create the database object
-    kyotocabinet::PolyDB db;
+    kyotocabinet::HashDB db;
+
+    db.tune_options(kyotocabinet::HashDB::TSMALL | kyotocabinet::HashDB::TLINEAR);
+    db.tune_alignment(0);
+    db.tune_defrag(8);
     
     // open the database
     if (!db.open(GeoNLP::Geocoder::name_normalized_id(path).c_str(),
-                 kyotocabinet::PolyDB::OWRITER | kyotocabinet::PolyDB::OCREATE))
+                 kyotocabinet::HashDB::OWRITER | kyotocabinet::HashDB::OCREATE))
       {
         std::cerr << "open error: " << db.error().name() << std::endl;
         return;
@@ -571,6 +575,8 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
           }
       }
 
+    std::cout << "Number of records in normalized id database: " << db.count() << "\n";
+    
     db.close();
   }
 
