@@ -247,10 +247,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
           if ( m_database_norm_id.get( make_id_key( agent.key().id() ), &val) )
             {
               index_id_value *idx, *idx1;
-              if ( level == 0 )
-                {
-                }
-              if ( !get_id_range(val, range0, range1,
+              if ( get_id_range(val, (level==0), range0, range1,
                                 &idx, &idx1) )
                 {
                   for (; idx < idx1; ++idx)
@@ -262,6 +259,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
                                                 id );
                           search_result.push_back(r);
                         }
+                      else std::cerr << "Internal error " << __FILE__ << " - " << __LINE__ << "\n";
                     }
                 }
             }
@@ -386,13 +384,20 @@ std::string Geocoder::get_type(long long id)
 }
 
 
-bool Geocoder::get_id_range(std::string &v, index_id_value range0, index_id_value range1,
+bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value range0, index_id_value range1,
                             index_id_value* *idx0, index_id_value* *idx1)
 {
   size_t sz = get_id_number_of_values(v);
   index_id_value* v0 = (index_id_value*)v.data();
   if (sz == 0)
     return false;
+
+  if (full_range)
+    {
+      *idx0 = v0;
+      *idx1 = v0 + sz;
+      return true;
+    }
 
   *idx0 = std::lower_bound(v0, v0 + sz, range0);
   if (*idx0 - v0 >= sz) return false;

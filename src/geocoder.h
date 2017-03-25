@@ -85,7 +85,7 @@ namespace GeoNLP {
       return v.size() / sizeof(index_id_value);
     }
 
-    static bool get_id_range(std::string &v, index_id_value range0, index_id_value range1,
+    static bool get_id_range(std::string &v, bool full_range, index_id_value range0, index_id_value range1,
                              index_id_value* *idx0, index_id_value* *idx1);
 
   protected:
