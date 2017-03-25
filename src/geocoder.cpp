@@ -387,7 +387,7 @@ std::string Geocoder::get_type(long long id)
 bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value range0, index_id_value range1,
                             index_id_value* *idx0, index_id_value* *idx1)
 {
-  size_t sz = get_id_number_of_values(v);
+  int sz = get_id_number_of_values(v);
   index_id_value* v0 = (index_id_value*)v.data();
   if (sz == 0)
     return false;
