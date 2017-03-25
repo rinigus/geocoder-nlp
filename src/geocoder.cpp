@@ -131,6 +131,7 @@ bool Geocoder::check_version(const char *supported)
   return false;
 }
 
+#ifdef GEONLP_PRINT_DEBUG
 static std::string v2s(const std::vector<std::string> &v)
 {
   std::string s = "{";
@@ -142,6 +143,7 @@ static std::string v2s(const std::vector<std::string> &v)
   s += "}";
   return s;
 }
+#endif
 
 bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)
 {
