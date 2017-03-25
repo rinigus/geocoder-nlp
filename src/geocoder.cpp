@@ -253,13 +253,9 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
                   for (; idx < idx1; ++idx)
                     {
                       long long int id = *idx;
-                      if ( level == 0 || ( id > range0 && id <= range1 ) )
-                        {
-                          IntermediateResult r( std::string(agent.key().ptr(), agent.key().length()),
-                                                id );
-                          search_result.push_back(r);
-                        }
-                      else std::cerr << "Internal error " << __FILE__ << " - " << __LINE__ << "\n";
+                      IntermediateResult r( std::string(agent.key().ptr(), agent.key().length()),
+                                            id );
+                      search_result.push_back(r);
                     }
                 }
             }
