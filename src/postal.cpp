@@ -161,6 +161,28 @@ void Postal::set_postal_datadir(const std::string &global, const std::string &co
   drop(); // force reinitialization
 }
 
+void Postal::set_postal_datadir_country(const std::string &country)
+{
+  std::vector<char> nc;
+  if (country.length() >= 1) str2vecchar(country, nc);
+
+  if (nc == m_postal_datadir_country) return; // nothing to do
+
+  m_postal_datadir_country = nc;
+  if (m_initialized)
+    {
+      // have to drop current country-specific parser and load a new one
+      libpostal_teardown_parser();
+
+      if ( (m_postal_datadir_country.empty() && !libpostal_setup_parser() ) ||
+           (!m_postal_datadir_country.empty() && !libpostal_setup_parser_datadir(m_postal_datadir_country.data())) )
+        {
+          std::cerr << "Postal: Error at set_postal_datadir_country " << country << std::endl;
+          drop();
+        }
+    }
+}
+
 void Postal::add_language(const std::string &lang)
 {
   std::vector<char> l;
@@ -177,16 +199,16 @@ bool Postal::init()
        (!m_postal_datadir_global.empty() && !libpostal_setup_datadir(m_postal_datadir_global.data())) )
     return false;
 
-  if ( (m_postal_datadir_country.empty() && !libpostal_setup_parser() ) ||
-       (!m_postal_datadir_country.empty() && !libpostal_setup_parser_datadir(m_postal_datadir_country.data())) )
-    return false;
-
   if ( m_postal_languages.empty() )
     {
       if ( (m_postal_datadir_global.empty() && !libpostal_setup_language_classifier() ) ||
 	   (!m_postal_datadir_global.empty() && !libpostal_setup_language_classifier_datadir(m_postal_datadir_global.data())) )
 	return false;
     }
+
+  if ( (m_postal_datadir_country.empty() && !libpostal_setup_parser() ) ||
+       (!m_postal_datadir_country.empty() && !libpostal_setup_parser_datadir(m_postal_datadir_country.data())) )
+    return false;
 
   m_initialized = true;
   return true;
@@ -195,9 +217,9 @@ bool Postal::init()
 void Postal::drop()
 {
   if (!m_initialized) return;
+  libpostal_teardown_parser();
   libpostal_teardown();
   libpostal_teardown_language_classifier();
-  libpostal_teardown_parser();
   m_initialized = false;
 }
 
