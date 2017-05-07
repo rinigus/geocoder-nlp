@@ -9,7 +9,7 @@ LIBPOSTAL_LIB=-lpostal
 #LIBPOSTAL_LIB=-l:libpostal.a -l:libsnappy.a
 
 SQLITE_LIB=-lsqlite3
-@SQLITE_LIB=-l:libsqlite3.a
+#SQLITE_LIB=-l:libsqlite3.a
 
 LD_EXTRA_OPTIONS += -pthread -lmarisa -lkyotocabinet
 #LD_EXTRA_OPTIONS += -ldl -static-libgcc -static-libstdc++
