@@ -36,7 +36,7 @@ namespace GeoNLP {
 
     virtual ~Geocoder() {}
 
-    bool search(const std::vector< Postal::ParseResult > &parsed_query, std::vector<GeoResult> &result);
+    bool search(const std::vector< Postal::ParseResult > &parsed_query, std::vector<GeoResult> &result, size_t min_levels=0);
 
     int get_levels_in_title() const { return m_levels_in_title; }
     void set_levels_in_title(int l) { m_levels_in_title = l; }

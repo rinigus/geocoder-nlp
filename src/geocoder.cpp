@@ -149,7 +149,7 @@ static std::string v2s(const std::vector<std::string> &v)
 }
 #endif
 
-bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result)
+bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<Geocoder::GeoResult> &result, size_t min_levels)
 {
   if (!m_database_open)
     return false;
@@ -159,7 +159,7 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
   Postal::result2hierarchy(parsed_query, parsed_result);
 
   result.clear();
-  m_levels_resolved = 0;
+  m_levels_resolved = min_levels;
 
 #ifdef GEONLP_PRINT_DEBUG
   std::cout << "Search hierarchies:\n";
