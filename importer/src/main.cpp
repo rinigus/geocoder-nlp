@@ -15,7 +15,7 @@
 #include <fstream>
 #include <algorithm>
 
-#define DB_VERSION "2"
+#define DB_VERSION "3"
 
 #define MAX_NUMBER_OF_EXPANSIONS 85 /// if there are more expansions
                                     /// that specified, this object
@@ -591,7 +591,7 @@ int main(int argc, char* argv[])
 {
   if (argc<3)
     {
-      std::cerr << "importer <map directory> <database name> [<postal_country_parser_code>]\n";
+      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> [<postal_country_parser_code>]\n";
       return 1;
     }
 
@@ -620,6 +620,8 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS type" );
   db.execute( "DROP TABLE IF EXISTS object_primary" );
   db.execute( "DROP TABLE IF EXISTS object_primary_tmp" );
+  db.execute( "DROP TABLE IF EXISTS object_primary_tmp2" );
+  db.execute( "DROP TABLE IF EXISTS boxids" );
   db.execute( "DROP TABLE IF EXISTS object_type" );
   db.execute( "DROP TABLE IF EXISTS object_type_tmp" );
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
@@ -640,21 +642,41 @@ int main(int argc, char* argv[])
 
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
   db.execute( "INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp" );
-  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, "
+  db.execute( "CREATE TEMPORARY TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+              "name TEXT NOT NULL, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
               "FOREIGN KEY (type_id) REFERENCES type(id))");
   
-  db.execute( "INSERT INTO object_primary (id, name, parent, type_id, latitude, longitude) "
-              "SELECT p.id, p.name, p.parent, type.id, p.latitude, p.longitude FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
+  db.execute( "INSERT INTO object_primary_tmp2 (id, name, parent, type_id, latitude, longitude, boxstr) "
+              "SELECT p.id, p.name, p.parent, type.id, p.latitude, p.longitude, "
+              // LINE BELOW DETERMINES ROUNDING USED FOR BOXES
+              "CAST(CAST(p.latitude*100 AS INTEGER) AS TEXT) || ',' || CAST(CAST(p.longitude*100 AS INTEGER) AS TEXT) "
+              "FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
               "JOIN type ON tt.type=type.name" );
+
+  db.execute( "CREATE TEMPORARY TABLE boxids (id INTEGER PRIMARY KEY AUTOINCREMENT, boxstr TEXT, CONSTRAINT struni UNIQUE (boxstr))" );
+  db.execute( "INSERT INTO boxids (boxstr) SELECT DISTINCT boxstr FROM object_primary_tmp2" );
+
+  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, "
+              "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
+              "FOREIGN KEY (type_id) REFERENCES type(id))" );
+  db.execute( "INSERT INTO object_primary (id, name, parent, type_id, latitude, longitude, box_id) " 
+              "SELECT o.id, name, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
+
+  db.execute( "DROP INDEX IF EXISTS idx_object_primary_box" );
+  db.execute( "CREATE INDEX idx_object_primary_boxstr ON object_primary (box_id)" );
 
   std::cout << "Normalize using libpostal" << std::endl;
   
   normalize_libpostal(db);
   normalized_to_final(db, database_path);
   
-  db.execute ( "DROP INDEX IF EXISTS idx_norm_name" );
-  db.execute ( "CREATE INDEX idx_norm_name ON normalized_name (name,prim_id)" );
+  // Create R*Tree for nearest neighbor search
+  std::cout << "Populating R*Tree" << std::endl;
+  db.execute( "CREATE VIRTUAL TABLE object_primary_rtree USING rtree(id, minLat, maxLat, minLon, maxLon)" );
+  db.execute( "INSERT INTO object_primary_rtree (id, minLat, maxLat, minLon, maxLon) "
+              "SELECT box_id, min(latitude), max(latitude), min(longitude), max(longitude) from object_primary group by box_id" );
 
+  // Recording version
   db.execute( "DROP TABLE IF EXISTS meta" );
   db.execute( "CREATE TABLE meta (key TEXT, value TEXT)" );
   db.execute( "INSERT INTO meta (key, value) VALUES (\"version\", \"" DB_VERSION "\")" );
