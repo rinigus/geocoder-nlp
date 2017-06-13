@@ -36,8 +36,21 @@ namespace GeoNLP {
 
     virtual ~Geocoder() {}
 
+    /// \brief Search for any objects matching the normalized query
+    ///
     bool search(const std::vector< Postal::ParseResult > &parsed_query, std::vector<GeoResult> &result, size_t min_levels=0);
 
+    /// \brief Search for objects within given radius from specified point and matching the query
+    ///
+    /// Here, radius is given in meters and the reference point is
+    /// given by latitude and longitude (WGS 84)
+    bool search_nearby( const std::vector< std::string > &name_query,
+                        const std::string &type_query,
+                        double latitude, double longitude,
+                        double radius,
+                        std::vector<GeoResult> &result,
+                        Postal &postal );
+    
     int get_levels_in_title() const { return m_levels_in_title; }
     void set_levels_in_title(int l) { m_levels_in_title = l; }
 

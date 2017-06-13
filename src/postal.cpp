@@ -367,6 +367,37 @@ void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseR
   result.push_back(r);
 }
 
+void Postal::expand_string(const std::string &input, std::vector<std::string> &expansions)
+{
+  if (!m_use_postal || !init())
+    {
+      expansions.push_back(input);
+      return;
+    }
+
+  size_t num_expansions;
+  normalize_options_t options_norm = get_libpostal_default_options();
+
+  std::vector<char*> lang;
+  for (std::vector<char> &l: m_postal_languages)
+    lang.push_back(l.data());
+
+  options_norm.languages = lang.data();
+  options_norm.num_languages = lang.size();
+
+  std::vector<char> charbuff;
+
+  charbuff.resize(input.length() + 1);
+  std::copy(input.c_str(), input.c_str() + input.length() + 1, charbuff.begin());
+
+  char **expansions_cstr = expand_address(charbuff.data(), options_norm, &num_expansions);
+  std::vector< std::string > norm;
+  for (size_t j = 0; j < num_expansions; j++)
+    expansions.push_back(expansions_cstr[j]);
+
+  expansion_array_destroy(expansions_cstr, num_expansions);
+}
+
 void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hierarchy> &h)
 {
   h.clear();

@@ -104,7 +104,7 @@ void Geocoder::drop()
 
 bool Geocoder::check_version()
 {
-  return check_version("2");
+  return check_version("3");
 }
   
 bool Geocoder::check_version(const char *supported)
@@ -411,5 +411,94 @@ bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value rang
   *idx1 = std::upper_bound(v0, v0 + sz, range1);
   if (*idx1 - v0 >= sz && *(v0) > range1 ) return false;
 
+  return true;
+}
+
+
+bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
+                              const std::string &type_query,
+                              double latitude, double longitude,
+                              double radius,
+                              std::vector<GeoResult> &result,
+                              Postal &postal )
+{
+  if ( name_query.empty() && type_query.empty() )
+    return false;
+
+  // rough estimates of distance (meters) per degree
+  // 
+  const double dist_per_degree_lat = 111e3;
+  const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude));
+
+  try {
+    std::string query_txt( "SELECT o.id, o.name, t.name, o.box_id, o.latitude, o.longitude "
+                           "FROM object_primary o "
+                           "JOIN type t ON o.type_id=t.id "
+                           "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
+                           "WHERE " );
+    
+    if (!type_query.empty()) query_txt += " t.name LIKE '%" + type_query + "%' AND ";
+    
+    query_txt += "maxLat>=:minLat AND minLat<=:maxLat AND maxLon >= :minLon AND minLon <= :maxLon";
+    
+    sqlite3pp::query qry(m_db, query_txt.c_str());
+    
+    qry.bind(":minLat", latitude - radius/dist_per_degree_lat);
+    qry.bind(":maxLat", latitude + radius/dist_per_degree_lat);
+    qry.bind(":minLon", longitude - radius/dist_per_degree_lon);
+    qry.bind(":maxLon", longitude + radius/dist_per_degree_lon);
+    
+    for (auto v: qry)
+      {
+        long long id, box_id;
+        std::string name, type;
+        double lat, lon;
+        v.getter() >> id >> name >> type >> box_id >> lat >> lon;
+
+        // check if distance is ok. note that the distance is expected
+        // to be small (on the scale of the planet)
+        {
+          double dlat = dist_per_degree_lat * (latitude-lat);
+          double dlon = dist_per_degree_lon * (longitude-lon);
+          double dist = sqrt( dlat*dlat + dlon*dlon );
+          if ( dist > radius )
+            continue; // skip this result
+        }
+
+        // if name specified, check for it
+        if ( !name_query.empty() )
+          {
+            std::vector<std::string> expanded;
+            postal.expand_string( name, expanded );
+
+            bool found = false;
+            for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
+              for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
+                found = ( e->find(*q) != std::string::npos );
+
+            if (!found)
+              continue; // substring not found
+          }
+        
+        GeoResult r;
+        r.id = id;
+        
+        get_name(r.id, r.title, r.address, m_levels_in_title);
+        r.type = get_type(r.id);
+        
+        r.latitude = latitude;
+        r.longitude = longitude;
+        r.levels_resolved = 1; // not used in this search
+        
+        result.push_back(r);
+        if ( result.size() >=  m_max_results)
+          break;
+      }
+  }
+  catch (sqlite3pp::database_error e) {
+    std::cerr << "Geocoder exception: " << e.what() << std::endl;
+    return false;
+  }
+  
   return true;
 }
