@@ -13,9 +13,9 @@ int main(int argc, char *argv[])
 
   if (argc < 5)
     {
-      std::cout << "Use: " << argv[0] << " sqlite.dbase postal_global postal_country address\n"
+      std::cout << "Use: " << argv[0] << " dbase postal_global postal_country address\n"
 		<< "where\n"
-		<< " sqlite.dbase - path to SQLite database\n"
+		<< " dbase - path to Geocoder-NLP database folder\n"
 		<< " postal_global - path to libpostal database with language classifier\n"
 		<< " postal_country - path to libpostal  database covering country\n"
 		<< " address - address to be parsed (please enclose it in \" \" to ensure that its a singe argument)\n";
