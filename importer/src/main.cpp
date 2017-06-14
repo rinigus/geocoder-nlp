@@ -663,7 +663,7 @@ int main(int argc, char* argv[])
               "SELECT o.id, name, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
 
   db.execute( "DROP INDEX IF EXISTS idx_object_primary_box" );
-  db.execute( "CREATE INDEX idx_object_primary_boxstr ON object_primary (box_id)" );
+  db.execute( "CREATE INDEX idx_object_primary_box ON object_primary (box_id)" );
 
   std::cout << "Normalize using libpostal" << std::endl;
   
