@@ -486,8 +486,8 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
         get_name(r.id, r.title, r.address, m_levels_in_title);
         r.type = get_type(r.id);
         
-        r.latitude = latitude;
-        r.longitude = longitude;
+        r.latitude = lat;
+        r.longitude = lon;
         r.levels_resolved = 1; // not used in this search
         
         result.push_back(r);
