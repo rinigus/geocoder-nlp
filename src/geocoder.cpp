@@ -428,7 +428,7 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
   // rough estimates of distance (meters) per degree
   // 
   const double dist_per_degree_lat = 111e3;
-  const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude));
+  const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude*M_PI/180.0));
 
   try {
     std::string query_txt( "SELECT o.id, o.name, t.name, o.box_id, o.latitude, o.longitude "
