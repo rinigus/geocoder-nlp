@@ -589,6 +589,14 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
 
 int main(int argc, char* argv[])
 {
+  if (argc == 2)
+    {
+      std::string option = argv[1];
+      if ( option == "--version" )
+        std::cout << DB_VERSION << "\n";
+      return 0;
+    }
+  
   if (argc<3)
     {
       std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> [<postal_country_parser_code>]\n";
