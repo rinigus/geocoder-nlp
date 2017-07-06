@@ -21,10 +21,13 @@ namespace GeoNLP {
       long long int id;
       double latitude;
       double longitude;
+      double distance;
       std::string title;
       std::string address;
       std::string type;
       size_t levels_resolved;
+
+      bool operator< (const GeoResult &i) const { return (distance<i.distance);}
     };
 
     typedef uint32_t index_id_key;
@@ -40,22 +43,11 @@ namespace GeoNLP {
     ///
     bool search(const std::vector< Postal::ParseResult > &parsed_query, std::vector<GeoResult> &result, size_t min_levels=0);
 
-//    /// \brief Search for objects within given radius from specified point and matching the query
-//    ///
-//    /// Here, radius is given in meters and the reference point is
-//    /// given by latitude and longitude (WGS 84)
-//    bool search_nearby( const std::vector< std::string > &name_query,
-//                        const std::string &type_query,
-//                        double latitude, double longitude,
-//                        double radius,
-//                        std::vector<GeoResult> &result,
-//                        Postal &postal );
-
     /// \brief Search for objects within given radius from specified point and matching the query
     ///
     /// Here, radius is given in meters and the reference point is
     /// given by latitude and longitude (WGS 84)
-    bool search_nearby( const std::vector< std::string > &query,
+    bool search_nearby(const std::vector< std::string > &query,
                         double latitude, double longitude,
                         double radius,
                         std::vector<GeoResult> &result,

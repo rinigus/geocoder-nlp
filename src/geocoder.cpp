@@ -42,47 +42,47 @@ bool Geocoder::load(const std::string &dbname)
 
   bool error = false;
   try
-    {
-      m_database_path = dbname;
-      if ( m_db.connect(name_primary(m_database_path).c_str(),
-                        SQLITE_OPEN_READONLY) != SQLITE_OK )
-        {
-          error = true;
-          std::cerr << "Error opening SQLite database\n";
-        }
-      
-      if ( !error && !check_version() )
-        {
-          error = true;
-        }
-      
-      // Limit Kyoto Cabinet caches
-      m_database_norm_id.tune_map(32LL*1024LL*1024LL);        // 64MB default
-      //m_database_norm_id.tune_page_cache(32LL*1024LL*1024LL); // 64MB default
+  {
+    m_database_path = dbname;
+    if ( m_db.connect(name_primary(m_database_path).c_str(),
+                      SQLITE_OPEN_READONLY) != SQLITE_OK )
+      {
+        error = true;
+        std::cerr << "Error opening SQLite database\n";
+      }
 
-      if ( !error &&
-           !m_database_norm_id.open(name_normalized_id(m_database_path).c_str(),
-                                    kyotocabinet::HashDB::OREADER | kyotocabinet::HashDB::ONOLOCK ) )
-        {
-          error = true;
-          std::cerr << "Error opening IDs database\n";
-        }
+    if ( !error && !check_version() )
+      {
+        error = true;
+      }
 
-      if ( !error )
-        m_trie_norm.load(name_normalized_trie(m_database_path).c_str()); // throws exception on error
+    // Limit Kyoto Cabinet caches
+    m_database_norm_id.tune_map(32LL*1024LL*1024LL);        // 64MB default
+    //m_database_norm_id.tune_page_cache(32LL*1024LL*1024LL); // 64MB default
 
-      m_database_open = true;
-    }
+    if ( !error &&
+         !m_database_norm_id.open(name_normalized_id(m_database_path).c_str(),
+                                  kyotocabinet::HashDB::OREADER | kyotocabinet::HashDB::ONOLOCK ) )
+      {
+        error = true;
+        std::cerr << "Error opening IDs database\n";
+      }
+
+    if ( !error )
+      m_trie_norm.load(name_normalized_trie(m_database_path).c_str()); // throws exception on error
+
+    m_database_open = true;
+  }
   catch (sqlite3pp::database_error e)
-    {
-      error = true;
-      std::cerr << "Geocoder SQLite exception: " << e.what() << std::endl;
-    }
+  {
+    error = true;
+    std::cerr << "Geocoder SQLite exception: " << e.what() << std::endl;
+  }
   catch (marisa::Exception e)
-    {
-      error = true;
-      std::cerr << "Geocoder MARISA exception: " << e.what() << std::endl;
-    }
+  {
+    error = true;
+    std::cerr << "Geocoder MARISA exception: " << e.what() << std::endl;
+  }
 
   if (error) drop();
   return !error;
@@ -106,32 +106,32 @@ bool Geocoder::check_version()
 {
   return check_version("3");
 }
-  
+
 bool Geocoder::check_version(const char *supported)
 {
   // this cannot through exceptions
-  try 
-    {
-      sqlite3pp::query qry(m_db, "SELECT value FROM meta WHERE key=\"version\"");
-      
-      for (auto v: qry)
-	{
-	  std::string n;
-	  v.getter() >> n;
-	  if ( n == supported ) return true;
-	  else
-	    {
-	      std::cerr << "Geocoder: wrong version of the database. Supported: " << supported << " / database version: " << n << std::endl;
-	      return false;
-	    }
-	}
-    }
-   catch (sqlite3pp::database_error e)
-    {
-      std::cerr << "Geocoder exception while checking database version: " << e.what() << std::endl;
-      return false;
-    }
-     
+  try
+  {
+    sqlite3pp::query qry(m_db, "SELECT value FROM meta WHERE key=\"version\"");
+
+    for (auto v: qry)
+      {
+        std::string n;
+        v.getter() >> n;
+        if ( n == supported ) return true;
+        else
+          {
+            std::cerr << "Geocoder: wrong version of the database. Supported: " << supported << " / database version: " << n << std::endl;
+            return false;
+          }
+      }
+  }
+  catch (sqlite3pp::database_error e)
+  {
+    std::cerr << "Geocoder exception while checking database version: " << e.what() << std::endl;
+    return false;
+  }
+
   return false;
 }
 
@@ -178,15 +178,15 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
 #endif
 
 	m_query_count = 0;
-        if ( r.size() >= m_levels_resolved ||
-             (r.size() == m_levels_resolved && result.size() < m_max_results) )
-          search(r, result);
+	if ( r.size() >= m_levels_resolved ||
+	     (r.size() == m_levels_resolved && result.size() < m_max_results) )
+	  search(r, result);
 #ifdef GEONLP_PRINT_DEBUG_QUERIES
         else
           std::cout << "Skipping hierarchy since search result already has more levels than provided\n";
 #endif
 #ifdef GEONLP_PRINT_DEBUG_QUERIES
-	std::cout << "\n";
+        std::cout << "\n";
 #endif
       }
 
@@ -197,24 +197,24 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
     // fill the data
     for (GeoResult &r: result)
       {
-	get_name(r.id, r.title, r.address, m_levels_in_title);
-	r.type = get_type(r.id);
+        get_name(r.id, r.title, r.address, m_levels_in_title);
+        r.type = get_type(r.id);
 
-	sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
-	qry.bind(1, r.id);
-	for (auto v: qry)
-	  {
-	    // only one entry is expected
-	    v.getter() >> r.latitude >> r.longitude;
-	    break;
-	  }      
+        sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
+        qry.bind(1, r.id);
+        for (auto v: qry)
+          {
+            // only one entry is expected
+            v.getter() >> r.latitude >> r.longitude;
+            break;
+          }
       }
   }
   catch (sqlite3pp::database_error e)
-    {
-      std::cerr << "Geocoder exception: " << e.what() << std::endl;
-      return false;
-    }
+  {
+    std::cerr << "Geocoder exception: " << e.what() << std::endl;
+    return false;
+  }
   
 
   return true;
@@ -231,7 +231,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
 
   m_query_count++;
 
-  std::set<long long int> ids_explored; /// keeps all ids which have been used to search further at this level 
+  std::set<long long int> ids_explored; /// keeps all ids which have been used to search further at this level
 
   // help structure keeping marisa-found search string with found ids
   struct IntermediateResult
@@ -243,7 +243,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
     { return ( txt.length() < A.txt.length() || (txt.length() == A.txt.length() && txt<A.txt) || (txt==A.txt && id<A.id) ); }
   };
   
-  std::deque<IntermediateResult> search_result;  
+  std::deque<IntermediateResult> search_result;
   for (const std::string s: parsed[level])
     {
       marisa::Agent agent;
@@ -308,32 +308,32 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
         }
       
       if ( last_level ||
-	   last_subobject <= id ||
-	   !search(parsed, result, level+1, id, last_subobject) )
+           last_subobject <= id ||
+           !search(parsed, result, level+1, id, last_subobject) )
         {
-	  size_t levels_resolved = level+1;
-	  if ( m_levels_resolved < levels_resolved )
+          size_t levels_resolved = level+1;
+          if ( m_levels_resolved < levels_resolved )
             {
-	      result.clear();
-	      m_levels_resolved = levels_resolved;
+              result.clear();
+              m_levels_resolved = levels_resolved;
             }
 
           if (m_levels_resolved == levels_resolved && (result.size() < m_max_results))
             {
-	      bool have_already = false;
-	      for (const auto &r: result)
-		if (r.id == id)
-		  {
-		    have_already = true;
-		    break;
-		  }
+              bool have_already = false;
+              for (const auto &r: result)
+                if (r.id == id)
+                  {
+                    have_already = true;
+                    break;
+                  }
 
-	      if (!have_already)
-                {                  
-		  GeoResult r;
-		  r.id = id;
-		  r.levels_resolved = levels_resolved;
-		  result.push_back(r);
+              if (!have_already)
+                {
+                  GeoResult r;
+                  r.id = id;
+                  r.levels_resolved = levels_resolved;
+                  result.push_back(r);
                 }
             }
         }
@@ -360,8 +360,8 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, int
 
       if (levels_in_title > 0)
         {
-	  if (!title.empty()) title += ", ";
-	  title += name;
+          if (!title.empty()) title += ", ";
+          title += name;
         }
 
       get_name(parent, title, full, levels_in_title-1);
@@ -415,94 +415,6 @@ bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value rang
 }
 
 
-//bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
-//                              const std::string &type_query,
-//                              double latitude, double longitude,
-//                              double radius,
-//                              std::vector<GeoResult> &result,
-//                              Postal &postal )
-//{
-//  if ( name_query.empty() && type_query.empty() )
-//    return false;
-
-//  // rough estimates of distance (meters) per degree
-//  //
-//  const double dist_per_degree_lat = 111e3;
-//  const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude*M_PI/180.0));
-
-//  try {
-//    std::string query_txt( "SELECT o.id, o.name, t.name, o.box_id, o.latitude, o.longitude "
-//                           "FROM object_primary o "
-//                           "JOIN type t ON o.type_id=t.id "
-//                           "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
-//                           "WHERE " );
-    
-//    if (!type_query.empty()) query_txt += " t.name LIKE '%" + type_query + "%' AND ";
-    
-//    query_txt += "maxLat>=:minLat AND minLat<=:maxLat AND maxLon >= :minLon AND minLon <= :maxLon";
-    
-//    sqlite3pp::query qry(m_db, query_txt.c_str());
-    
-//    qry.bind(":minLat", latitude - radius/dist_per_degree_lat);
-//    qry.bind(":maxLat", latitude + radius/dist_per_degree_lat);
-//    qry.bind(":minLon", longitude - radius/dist_per_degree_lon);
-//    qry.bind(":maxLon", longitude + radius/dist_per_degree_lon);
-    
-//    for (auto v: qry)
-//      {
-//        long long id, box_id;
-//        std::string name, type;
-//        double lat, lon;
-//        v.getter() >> id >> name >> type >> box_id >> lat >> lon;
-
-//        // check if distance is ok. note that the distance is expected
-//        // to be small (on the scale of the planet)
-//        {
-//          double dlat = dist_per_degree_lat * (latitude-lat);
-//          double dlon = dist_per_degree_lon * (longitude-lon);
-//          double dist = sqrt( dlat*dlat + dlon*dlon );
-//          if ( dist > radius )
-//            continue; // skip this result
-//        }
-
-//        // if name specified, check for it
-//        if ( !name_query.empty() )
-//          {
-//            std::vector<std::string> expanded;
-//            postal.expand_string( name, expanded );
-
-//            bool found = false;
-//            for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
-//              for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
-//                found = ( e->find(*q) != std::string::npos );
-
-//            if (!found)
-//              continue; // substring not found
-//          }
-        
-//        GeoResult r;
-//        r.id = id;
-        
-//        get_name(r.id, r.title, r.address, m_levels_in_title);
-//        r.type = get_type(r.id);
-        
-//        r.latitude = lat;
-//        r.longitude = lon;
-//        r.levels_resolved = 1; // not used in this search
-        
-//        result.push_back(r);
-//        if ( result.size() >=  m_max_results)
-//          break;
-//      }
-//  }
-//  catch (sqlite3pp::database_error e) {
-//    std::cerr << "Geocoder exception: " << e.what() << std::endl;
-//    return false;
-//  }
-  
-//  return true;
-//}
-
 bool Geocoder::search_nearby( const std::vector< std::string > &query,
                               double latitude, double longitude,
                               double radius,
@@ -537,7 +449,7 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
       {
         long long id, box_id;
         std::string name, type;
-        double lat, lon;
+        double lat, lon, distance;
         v.getter() >> id >> name >> type >> box_id >> lat >> lon;
 
         // check if distance is ok. note that the distance is expected
@@ -545,8 +457,8 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
         {
           double dlat = dist_per_degree_lat * (latitude-lat);
           double dlon = dist_per_degree_lon * (longitude-lon);
-          double dist = sqrt( dlat*dlat + dlon*dlon );
-          if ( dist > radius )
+          distance = sqrt( dlat*dlat + dlon*dlon );
+          if ( distance > radius )
             continue; // skip this result
         }
 
@@ -576,17 +488,22 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
 
         r.latitude = lat;
         r.longitude = lon;
+        r.distance = distance;
         r.levels_resolved = 1; // not used in this search
 
         result.push_back(r);
-        if ( result.size() >=  m_max_results)
-          break;
       }
   }
   catch (sqlite3pp::database_error e) {
     std::cerr << "Geocoder exception: " << e.what() << std::endl;
     return false;
   }
+
+  if ( m_max_results > 0 && result.size() >=  m_max_results )
+    {
+      std::sort( result.begin(), result.end() );
+      result.resize(m_max_results);
+    }
 
   return true;
 }
