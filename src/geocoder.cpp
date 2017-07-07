@@ -474,7 +474,10 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
 
             for ( auto q = query.cbegin(); !found && q != query.cend(); ++q )
               for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
-                found = ( e->find(*q) != std::string::npos );
+                // search is for whether the name starts with the query or has
+                // the query after space (think of street Dr. Someone and query Someone)
+                found = ( e->compare(0, q->length(), *q) == 0  ||
+                          e->find(" " + *q) != std::string::npos );
           }
 
         if (!found)
