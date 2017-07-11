@@ -62,6 +62,14 @@ namespace GeoNLP {
     size_t get_max_results() const { return m_max_results; }
     void set_max_results(size_t mx) { m_max_results = mx; }
 
+    /// \brief Set preferred language for results
+    ///
+    /// Use two-letter coded language code as an argument. For
+    /// example, for English, set it to "en". If the original name is
+    /// requested, you could set it to any invalid letter combination
+    /// or an empty string.
+    void set_result_language(const std::string &lang) { m_preferred_result_language = lang; }
+
     bool load(const std::string &dbpath);
     bool load();
     void drop();
@@ -129,6 +137,8 @@ namespace GeoNLP {
 
     size_t m_levels_resolved;
     size_t m_query_count;
+
+    std::string m_preferred_result_language;
   };
 
 }

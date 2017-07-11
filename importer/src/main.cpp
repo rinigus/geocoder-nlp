@@ -1,5 +1,6 @@
 #include <osmscout/Database.h>
 #include <osmscout/LocationService.h>
+#include <osmscout/TypeFeatures.h>
 
 #include "geocoder.h"
 
@@ -15,7 +16,7 @@
 #include <fstream>
 #include <algorithm>
 
-#define DB_VERSION "3"
+#define DB_VERSION "4"
 
 #define MAX_NUMBER_OF_EXPANSIONS 85 /// if there are more expansions
                                     /// that specified, this object
@@ -127,6 +128,73 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
   }
 }
 
+typedef osmscout::FeatureValueReader<osmscout::NameAltFeature,osmscout::NameAltFeatureValue> NameAltReader;
+typedef osmscout::FeatureValueReader<osmscout::NameFeature,osmscout::NameFeatureValue> NameReader;
+NameAltReader *nameAltReader{NULL};
+NameReader *nameReader{NULL};
+void GetNames(const osmscout::FeatureValueBuffer &features, std::string &name, std::string &name_en)
+{  
+  osmscout::NameFeatureValue *nameValue=nameReader->GetValue(features);
+  if (nameValue != NULL)
+    name = nameValue->GetName();
+
+  osmscout::NameAltFeatureValue *nameAltValue=nameAltReader->GetValue(features);
+  if (nameAltValue != NULL)
+    name_en = nameAltValue->GetNameAlt();
+
+  // for (auto featureInstance :features.GetType()->GetFeatures())
+  //   {
+  //     if (features.HasFeature(featureInstance.GetIndex()))
+  //       {
+  //         osmscout::FeatureRef feature=featureInstance.GetFeature();
+  //         std::string fname = feature->GetName();
+          
+  //         if (fname == "NameAlt" && feature->HasValue())
+  //           {
+  //             osmscout::FeatureValue *value=features.GetValue(featureInstance.GetIndex());
+  //             if (feature->HasLabel())
+  //               {
+  //                 name_en = value->GetLabel();
+  //                 return name_en;
+  //               }
+  //           }
+  //       }
+  //   }
+
+  // return name_en;  
+}
+
+void GetObjectNames( const osmscout::DatabaseRef& database,
+                     const osmscout::ObjectFileRef& object,
+                     std::string &name,
+                     std::string &name_en )
+{
+  if (object.GetType()==osmscout::RefType::refNode)
+    {
+      osmscout::NodeRef node;
+
+      if (database->GetNodeByOffset(object.GetFileOffset(),
+                                    node))
+        GetNames(node->GetFeatureValueBuffer(), name, name_en);
+    }
+  else if (object.GetType()==osmscout::RefType::refArea)
+    {
+      osmscout::AreaRef area;
+      
+      if (database->GetAreaByOffset(object.GetFileOffset(),
+                                    area))
+        GetNames(area->GetFeatureValueBuffer(), name, name_en);
+    }
+  else if (object.GetType()==osmscout::RefType::refWay)
+    {
+      osmscout::WayRef way;
+
+      if (database->GetWayByOffset(object.GetFileOffset(),
+                                   way))
+        GetNames(way->GetFeatureValueBuffer(), name, name_en);
+    }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////
 /// SQLite helper functions
@@ -153,24 +221,30 @@ public:
     m_parent(parent)
   {}
 
-  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::Location &location, const osmscout::Address &address)
+  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::PostalArea &postalArea, const osmscout::Location &location, const osmscout::Address &address)
   {
     std::string type;
+    std::string name;
+    std::string name_en;
     osmscout::GeoCoord coordinates;
     sqlid id;
     
     GetObjectTypeCoor(m_database, address.object, type, coordinates);
     id = IDs.next();
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+    GetObjectNames(m_database, address.object, name, name_en);
+      
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << address.name
+                 << name
+                 << name_en
                  << m_parent
                  << coordinates.GetLon()
                  << coordinates.GetLat();
     
     if (cmd.execute() != SQLITE_OK)
-      std::cerr << "Error inserting " << address.name << "\n";
+      std::cerr << "Error inserting addr " << address.name << "\n";
 
     IDs.set_parent(id, m_parent);
     write_type(m_db, id, type);
@@ -185,6 +259,53 @@ protected:
 };
 
 //////////////////////////////////////////////////
+class PoiVisitor: public osmscout::POIVisitor
+{
+public:
+  PoiVisitor(osmscout::DatabaseRef &database, sqlite3pp::database &db, sqlid parent):
+    m_database(database),
+    m_db(db),
+    m_parent(parent)
+  {}
+  
+  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::POI &poi)
+  {
+    std::string type;
+    std::string name;
+    std::string name_en;
+    osmscout::GeoCoord coordinates;
+    sqlid id;
+    
+    GetObjectTypeCoor(m_database, poi.object, type, coordinates);
+    id = IDs.next();
+
+    GetObjectNames(m_database, poi.object, name, name_en);
+    
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    cmd.binder() << id
+                 << poi.name
+                 << name
+                 << name_en
+                 << m_parent
+                 << coordinates.GetLon()
+                 << coordinates.GetLat();
+    
+    if (cmd.execute() != SQLITE_OK)
+      std::cerr << "Error inserting POI " << poi.name << "\n";
+
+    IDs.set_parent(id, m_parent);
+    write_type(m_db, id, type);
+
+    return true;
+  }
+
+protected:
+  osmscout::DatabaseRef &m_database;
+  sqlite3pp::database &m_db;
+  sqlid m_parent;
+};
+
+///////////////////////////////////////////////////////
 class LocVisitor: public osmscout::LocationVisitor
 {
 public:
@@ -193,35 +314,12 @@ public:
     m_db(db),
     m_parent(parent)
   {}
-
-  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::POI &poi)
-  {
-    std::string type;
-    osmscout::GeoCoord coordinates;
-    sqlid id;
-    
-    GetObjectTypeCoor(m_database, poi.object, type, coordinates);
-    id = IDs.next();
-
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
-    cmd.binder() << id
-                 << poi.name
-                 << m_parent
-                 << coordinates.GetLon()
-                 << coordinates.GetLat();
-    
-    if (cmd.execute() != SQLITE_OK)
-      std::cerr << "Error inserting " << poi.name << "\n";
-
-    IDs.set_parent(id, m_parent);
-    write_type(m_db, id, type);
-
-    return true;
-  }
  
-  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::Location &location)
+  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::PostalArea &postalArea, const osmscout::Location &location)
   {
     std::string type;
+    std::string name;
+    std::string name_en;
     osmscout::GeoCoord coordinates;
     sqlid id;
     sqlid locID;
@@ -236,21 +334,25 @@ public:
     locID = id = IDs.next();
     IDs.set_id(location.locationOffset, id);
     
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+    GetObjectNames(m_database, location.objects[ location.objects.size()/2 ], name, name_en);
+    
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << location.name
+                 << name
+                 << name_en
                  << m_parent
                  << coordinates.GetLon()
                  << coordinates.GetLat();
 
     if (cmd.execute() != SQLITE_OK)
-      std::cerr << "Error inserting " << location.name << "\n";
+      std::cerr << "Error inserting location " << location.name << "\n";
 
     IDs.set_parent(id, m_parent, true);
     write_type(m_db, id, type);
     
     AddrVisitor addr(m_database, m_db, locID);
-    m_database->GetLocationIndex()->VisitLocationAddresses(adminRegion, location, addr);
+    m_database->GetLocationIndex()->VisitAddresses(adminRegion, postalArea, location, addr);
 
     return true;
   }
@@ -276,6 +378,8 @@ public:
   {
     // insert region first
     std::string type;
+    std::string name;
+    std::string name_en;
     osmscout::GeoCoord coordinates;
     sqlid id;
     sqlid regionID;
@@ -284,16 +388,20 @@ public:
     regionID = id = IDs.next();
     IDs.set_id(region.regionOffset, id);
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+    GetObjectNames(m_database, region.object, name, name_en);
+    
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << region.name
+                 << name
+                 << name_en
                  << IDs.get_id(region.parentRegionOffset)
                  << coordinates.GetLon()
                  << coordinates.GetLat();
     IDs.set_parent(id, region.parentRegionOffset, true);
     
     if (cmd.execute() != SQLITE_OK)
-      std::cerr << "Error inserting " << region.name << "\n";
+      std::cerr << "Error inserting region " << region.name << "\n";
 
     write_type(m_db, id, type);
 
@@ -304,18 +412,22 @@ public:
              saved_names.end(),
              region.aliasName) != saved_names.end() )
       {
-        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
 	
         GetObjectTypeCoor(m_database, region.aliasObject, type, coordinates);
         id = IDs.next();
 	
+        GetObjectNames(m_database, region.aliasObject, name, name_en);
+        
         cmd.binder() << id
                      << region.aliasName
+                     << name
+                     << name_en
                      << IDs.get_id(region.parentRegionOffset)
                      << coordinates.GetLon()
                      << coordinates.GetLat();
         if (cmd.execute() != SQLITE_OK)
-          std::cerr << "Error inserting " << region.aliasName << "\n";
+          std::cerr << "Error inserting region alias " << region.aliasName << "\n";
 	
         write_type(m_db, id, type);
         IDs.set_parent(id, region.parentRegionOffset);
@@ -330,7 +442,9 @@ public:
           continue; // skip since we saved it already
 
         saved_names.push_back(alias.name);
-	
+
+        // no name_en here
+        
         sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
         id = IDs.next();
         cmd.binder() << id
@@ -339,14 +453,18 @@ public:
                      << coordinates.GetLon()
                      << coordinates.GetLat();
         if (cmd.execute() != SQLITE_OK)
-          std::cerr << "Error inserting " << alias.name << "\n";
+          std::cerr << "Error inserting region alias 2 " << alias.name << "\n";
 	
         write_type(m_db, id, type);
         IDs.set_parent(id, region.parentRegionOffset);
       }
 
     LocVisitor loc(m_database, m_db, regionID);
-    m_database->GetLocationIndex()->VisitAdminRegionLocations(region, loc, false);
+    for (const osmscout::PostalArea &parea: region.postalAreas)
+      m_database->GetLocationIndex()->VisitLocations(region, parea, loc, false);
+    
+    PoiVisitor poi(m_database, m_db, regionID);
+    m_database->GetLocationIndex()->VisitPOIs(region, poi, false);
     
     return osmscout::AdminRegionVisitor::visitChildren;
   };
@@ -367,12 +485,19 @@ void normalize_libpostal(sqlite3pp::database& db)
   };
 
   std::deque<tonorm> data;
-  sqlite3pp::query qry(db, "SELECT id, name FROM object_primary_tmp");
+  sqlite3pp::query qry(db, "SELECT id, name, name_extra, name_en FROM object_primary_tmp");
   for (auto v : qry)
     {
       tonorm d;
-      v.getter() >> d.id >> d.name;
-      data.push_back(d);
+      sqlid id;
+      std::string name, name_extra, name_en;
+      v.getter() >> id >> name >> name_extra >> name_en;
+
+      d.id = id;
+
+      d.name = name; data.push_back(d);
+      if (!name_extra.empty()) { d.name = name_extra; data.push_back(d); }
+      if (!name_en.empty()) { d.name = name_en; data.push_back(d); }
     }
 
   // make a new table for normalized names
@@ -618,6 +743,9 @@ int main(int argc, char* argv[])
       return 1;
     }
 
+  nameReader = new NameReader(*database->GetTypeConfig());
+  nameAltReader = new NameAltReader(*database->GetTypeConfig());
+  
   sqlite3pp::database db(GeoNLP::Geocoder::name_primary(database_path).c_str());
 			 
   db.execute( "PRAGMA journal_mode = OFF" );
@@ -634,7 +762,7 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS object_type_tmp" );
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
 
-  db.execute( "CREATE TEMPORARY TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, parent INTEGER, latitude REAL, longitude REAL)");
+  db.execute( "CREATE TEMPORARY TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, latitude REAL, longitude REAL)");
   db.execute( "CREATE TEMPORARY TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
               "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
@@ -646,16 +774,22 @@ int main(int argc, char* argv[])
   locationIndex->VisitAdminRegions(vis_admin);
   IDs.write_hierarchy(db);
   
-  std::cout << "Reorganizing database tables" << std::endl; 
+  // cleanup from duplicated names
+  // db.execute( "UPDATE object_primary_tmp SET name_extra=NULL WHERE name_extra='' OR name=name_extra" );
+  // db.execute( "UPDATE object_primary_tmp SET name_en=NULL WHERE name_en='' OR name=name_en" );
+  db.execute( "UPDATE object_primary_tmp SET name_extra='' WHERE name=name_extra" );
+  db.execute( "UPDATE object_primary_tmp SET name_en='' WHERE name=name_en" );
+
+  std::cout << "Reorganizing database tables" << std::endl;
 
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
   db.execute( "INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp" );
   db.execute( "CREATE TEMPORARY TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-              "name TEXT NOT NULL, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
+              "name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
               "FOREIGN KEY (type_id) REFERENCES type(id))");
   
-  db.execute( "INSERT INTO object_primary_tmp2 (id, name, parent, type_id, latitude, longitude, boxstr) "
-              "SELECT p.id, p.name, p.parent, type.id, p.latitude, p.longitude, "
+  db.execute( "INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, parent, type_id, latitude, longitude, boxstr) "
+              "SELECT p.id, p.name, p.name_extra, p.name_en, p.parent, type.id, p.latitude, p.longitude, "
               // LINE BELOW DETERMINES ROUNDING USED FOR BOXES
               "CAST(CAST(p.latitude*100 AS INTEGER) AS TEXT) || ',' || CAST(CAST(p.longitude*100 AS INTEGER) AS TEXT) "
               "FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
@@ -664,11 +798,11 @@ int main(int argc, char* argv[])
   db.execute( "CREATE TEMPORARY TABLE boxids (id INTEGER PRIMARY KEY AUTOINCREMENT, boxstr TEXT, CONSTRAINT struni UNIQUE (boxstr))" );
   db.execute( "INSERT INTO boxids (boxstr) SELECT DISTINCT boxstr FROM object_primary_tmp2" );
 
-  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, "
+  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, "
               "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
               "FOREIGN KEY (type_id) REFERENCES type(id))" );
-  db.execute( "INSERT INTO object_primary (id, name, parent, type_id, latitude, longitude, box_id) " 
-              "SELECT o.id, name, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
+  db.execute( "INSERT INTO object_primary (id, name, name_extra, name_en, parent, type_id, latitude, longitude, box_id) " 
+              "SELECT o.id, name, name_extra, name_en, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
 
   db.execute( "DROP INDEX IF EXISTS idx_object_primary_box" );
   db.execute( "CREATE INDEX idx_object_primary_box ON object_primary (box_id)" );

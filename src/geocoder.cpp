@@ -104,7 +104,7 @@ void Geocoder::drop()
 
 bool Geocoder::check_version()
 {
-  return check_version("3");
+  return check_version("4");
 }
 
 bool Geocoder::check_version(const char *supported)
@@ -347,21 +347,30 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, int
 {
   long long int parent;
   std::string name;
+  std::string name_extra;
+  std::string name_en;
+  std::string toadd;
 
-  sqlite3pp::query qry(m_db, "SELECT name, parent FROM object_primary WHERE id=?");
+  sqlite3pp::query qry(m_db, "SELECT name, name_extra, name_en, parent FROM object_primary WHERE id=?");
   qry.bind(1, id);
   for (auto v: qry)
     {
       // only one entry is expected
-      v.getter() >> name >> parent;
+      v.getter() >> name >> name_extra >> name_en >> parent;
+
+      toadd = std::string();
+      if (m_preferred_result_language == "en" && !name_en.empty()) toadd = name_en;
+      else if (!name_extra.empty() && name != name_extra) toadd = name_extra + ", " + name;
+
+      if (toadd.empty()) toadd = name;
 
       if (!full.empty()) full += ", ";
-      full += name;
+      full += toadd;
 
       if (levels_in_title > 0)
         {
           if (!title.empty()) title += ", ";
-          title += name;
+          title += toadd;
         }
 
       get_name(parent, title, full, levels_in_title-1);
