@@ -33,6 +33,8 @@ namespace GeoNLP {
     typedef uint32_t index_id_key;
     typedef uint32_t index_id_value;
 
+    static const int version;
+
   public:
     Geocoder();
     Geocoder(const std::string &dbpath);
@@ -121,7 +123,7 @@ namespace GeoNLP {
 
     virtual bool check_version();
 
-    bool check_version(const char* supported);
+    bool check_version(const std::string &supported);
     
   protected:
     sqlite3pp::database m_db;

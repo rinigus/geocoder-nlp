@@ -8,6 +8,8 @@
 
 using namespace GeoNLP;
 
+const int GeoNLP::Geocoder::version{4};
+
 Geocoder::Geocoder()
 {
 }
@@ -104,10 +106,12 @@ void Geocoder::drop()
 
 bool Geocoder::check_version()
 {
-  return check_version("4");
+  std::ostringstream s;
+  s << Geocoder::version;
+  return check_version(s.str());
 }
 
-bool Geocoder::check_version(const char *supported)
+bool Geocoder::check_version(const std::string &supported)
 {
   // this cannot through exceptions
   try

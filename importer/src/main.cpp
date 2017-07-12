@@ -16,8 +16,6 @@
 #include <fstream>
 #include <algorithm>
 
-#define DB_VERSION "4"
-
 #define MAX_NUMBER_OF_EXPANSIONS 85 /// if there are more expansions
                                     /// that specified, this object
                                     /// will be dropped from
@@ -718,7 +716,7 @@ int main(int argc, char* argv[])
     {
       std::string option = argv[1];
       if ( option == "--version" )
-        std::cout << DB_VERSION << "\n";
+        std::cout << GeoNLP::Geocoder::version << "\n";
       return 0;
     }
   
@@ -821,8 +819,15 @@ int main(int argc, char* argv[])
   // Recording version
   db.execute( "DROP TABLE IF EXISTS meta" );
   db.execute( "CREATE TABLE meta (key TEXT, value TEXT)" );
-  db.execute( "INSERT INTO meta (key, value) VALUES (\"version\", \"" DB_VERSION "\")" );
-
+  {
+    sqlite3pp::command cmd(db,"INSERT INTO meta (key, value) VALUES (?, ?)");
+    std::ostringstream ss; ss << GeoNLP::Geocoder::version;
+    cmd.binder() << "version"
+                 << ss.str().c_str();
+    if (cmd.execute() != SQLITE_OK)
+      std::cerr << "WriteSQL: error inserting version information\n";
+  }
+  
   if ( !postal_country_parser.empty() )
     {
       std::cout << "Recording postal parser country preference: " <<  postal_country_parser << "\n";
