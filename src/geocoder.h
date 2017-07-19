@@ -34,6 +34,7 @@ namespace GeoNLP {
     typedef uint32_t index_id_value;
 
     static const int version;
+    static const size_t num_languages; ///< Number of languages supported by this version
 
   public:
     Geocoder();

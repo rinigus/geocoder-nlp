@@ -9,6 +9,7 @@
 using namespace GeoNLP;
 
 const int GeoNLP::Geocoder::version{4};
+const size_t GeoNLP::Geocoder::num_languages{2}; // 1 (default) + 1 (english)
 
 Geocoder::Geocoder()
 {
@@ -229,8 +230,11 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
                       std::vector<Geocoder::GeoResult> &result, size_t level,
                       long long int range0, long long int range1)
 {
+  /// Number of allowed queries are scaled by the number of
+  /// languages. Otherwise, with the languages added, one can start
+  /// missing search results.
   if ( level >= parsed.size() ||
-       (m_max_queries_per_hierarchy>0 && m_query_count > m_max_queries_per_hierarchy) )
+       (m_max_queries_per_hierarchy>0 && m_query_count > m_max_queries_per_hierarchy * num_languages) )
     return false;
 
   m_query_count++;

@@ -27,7 +27,7 @@ int main(int argc, char *argv[])
   Postal::ParseResult nonorm;
 
   postal.set_postal_datadir(argv[2], argv[3]);
-  postal.add_language("de");
+  postal.add_language("da");
   postal.add_language("et");
   postal.add_language("en");
   postal.set_initialize_every_call(true);
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
   std::cout << std::endl;
   
   Geocoder geo(argv[1]);
-  geo.set_max_queries_per_hierarchy(25);
+  geo.set_max_queries_per_hierarchy(30);
   geo.set_max_results(25);
   geo.set_result_language("en");
 

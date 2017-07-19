@@ -1,3 +1,8 @@
+/////////////////////////////////////////////////////////////////////
+/// WARNING: When adding new languages, increase the language count
+/// num_languages in geocoder.c
+/////////////////////////////////////////////////////////////////////
+
 #include <osmscout/Database.h>
 #include <osmscout/LocationService.h>
 #include <osmscout/TypeFeatures.h>
@@ -125,6 +130,12 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
     }
   }
 }
+
+
+/////////////////////////////////////////////////////////////////////
+/// WARNING: When adding new languages, increase the language count
+/// num_languages in geocoder.c
+/////////////////////////////////////////////////////////////////////
 
 typedef osmscout::FeatureValueReader<osmscout::NameAltFeature,osmscout::NameAltFeatureValue> NameAltReader;
 typedef osmscout::FeatureValueReader<osmscout::NameFeature,osmscout::NameFeatureValue> NameReader;
