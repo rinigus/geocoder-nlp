@@ -12,14 +12,17 @@
 using namespace GeoNLP;
 
 #define ADDRESS_PARSER_LABEL_HOUSE "house"
+#define ADDRESS_PARSER_LABEL_CATEGORY "category"
 #define ADDRESS_PARSER_LABEL_HOUSE_NUMBER "house_number"
 #define ADDRESS_PARSER_LABEL_ROAD "road"
 #define ADDRESS_PARSER_LABEL_SUBURB "suburb"
 #define ADDRESS_PARSER_LABEL_CITY_DISTRICT "city_district"
 #define ADDRESS_PARSER_LABEL_CITY "city"
+#define ADDRESS_PARSER_LABEL_ISLAND "island"
 #define ADDRESS_PARSER_LABEL_STATE_DISTRICT  "state_district"
 #define ADDRESS_PARSER_LABEL_STATE  "state"
 #define ADDRESS_PARSER_LABEL_POSTAL_CODE  "postal_code"
+#define ADDRESS_PARSER_LABEL_COUNTRY_REGION "country_region"
 #define ADDRESS_PARSER_LABEL_COUNTRY  "country"
 
 //////////////////////////////////////////////////////////////////////
@@ -280,17 +283,17 @@ bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &r
       charbuff.resize(input.length() + 1);
       std::copy(input.c_str(), input.c_str() + input.length() + 1, charbuff.begin());
 
-      address_parser_options_t options_parse = get_libpostal_address_parser_default_options();
+      libpostal_address_parser_options_t options_parse = libpostal_get_address_parser_default_options();
 
       // parse the address
-      address_parser_response_t *parsed = parse_address(charbuff.data(), options_parse);
+      libpostal_address_parser_response_t *parsed = libpostal_parse_address(charbuff.data(), options_parse);
       nonormalization.clear();
       for (size_t j = 0; j < parsed->num_components; j++)
         {
           std::vector<std::string> pc; pc.push_back(parsed->components[j]);
           nonormalization[ parsed->labels[j] ] = pc;
         }
-      address_parser_response_destroy(parsed);
+      libpostal_address_parser_response_destroy(parsed);
 
       expand(nonormalization, result);
     }
@@ -328,7 +331,7 @@ void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseR
     }
 
   size_t num_expansions;
-  normalize_options_t options_norm = get_libpostal_default_options();
+  libpostal_normalize_options_t options_norm = libpostal_get_default_options();
 
   std::vector<char*> lang;
   for (std::vector<char> &l: m_postal_languages)
@@ -349,12 +352,12 @@ void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseR
           charbuff.resize(tonorm.length() + 1);
           std::copy(tonorm.c_str(), tonorm.c_str() + tonorm.length() + 1, charbuff.begin());
 
-          char **expansions = expand_address(charbuff.data(), options_norm, &num_expansions);
+          char **expansions = libpostal_expand_address(charbuff.data(), options_norm, &num_expansions);
           std::vector< std::string > norm;
           for (size_t j = 0; j < num_expansions; j++)
             norm.push_back(expansions[j]);
 
-          expansion_array_destroy(expansions, num_expansions);
+          libpostal_expansion_array_destroy(expansions, num_expansions);
 
           address_expansions.push_back(norm);
           address_keys.push_back(i.first);
@@ -376,7 +379,7 @@ void Postal::expand_string(const std::string &input, std::vector<std::string> &e
     }
 
   size_t num_expansions;
-  normalize_options_t options_norm = get_libpostal_default_options();
+  libpostal_normalize_options_t options_norm = libpostal_get_default_options();
 
   std::vector<char*> lang;
   for (std::vector<char> &l: m_postal_languages)
@@ -390,12 +393,12 @@ void Postal::expand_string(const std::string &input, std::vector<std::string> &e
   charbuff.resize(input.length() + 1);
   std::copy(input.c_str(), input.c_str() + input.length() + 1, charbuff.begin());
 
-  char **expansions_cstr = expand_address(charbuff.data(), options_norm, &num_expansions);
+  char **expansions_cstr = libpostal_expand_address(charbuff.data(), options_norm, &num_expansions);
   std::vector< std::string > norm;
   for (size_t j = 0; j < num_expansions; j++)
     expansions.push_back(expansions_cstr[j]);
 
-  expansion_array_destroy(expansions_cstr, num_expansions);
+  libpostal_expansion_array_destroy(expansions_cstr, num_expansions);
 }
 
 void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hierarchy> &h)
@@ -407,13 +410,16 @@ void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hie
 #define ADDIFHAS(k) { ParseResult::const_iterator it = r.find(k); if (it != r.end()) h_result.push_back(it->second); }
 
       ADDIFHAS(ADDRESS_PARSER_LABEL_COUNTRY);
+      ADDIFHAS(ADDRESS_PARSER_LABEL_COUNTRY_REGION);
       ADDIFHAS(ADDRESS_PARSER_LABEL_STATE);
       ADDIFHAS(ADDRESS_PARSER_LABEL_STATE_DISTRICT);
+      ADDIFHAS(ADDRESS_PARSER_LABEL_ISLAND);
       ADDIFHAS(ADDRESS_PARSER_LABEL_CITY);
       ADDIFHAS(ADDRESS_PARSER_LABEL_CITY_DISTRICT);
       ADDIFHAS(ADDRESS_PARSER_LABEL_SUBURB);
       ADDIFHAS(ADDRESS_PARSER_LABEL_ROAD);
       ADDIFHAS(ADDRESS_PARSER_LABEL_HOUSE_NUMBER);
+      ADDIFHAS(ADDRESS_PARSER_LABEL_CATEGORY);
       ADDIFHAS(ADDRESS_PARSER_LABEL_HOUSE);
 
       // test if its primitive expansion result
