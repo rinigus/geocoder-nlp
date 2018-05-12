@@ -503,7 +503,7 @@ void normalize_libpostal(sqlite3pp::database& db)
   // normalize all names
   size_t num_expansions;
   size_t num_doubles_dropped = 0;
-  normalize_options_t options = get_libpostal_default_options();
+  libpostal_normalize_options_t options = libpostal_get_default_options();
   std::vector<char> charbuff;
   for (tonorm &d: data)
     {
@@ -526,8 +526,8 @@ void normalize_libpostal(sqlite3pp::database& db)
         }
       
   
-      char **expansions = expand_address(charbuff.data(), options, &num_expansions);
-
+      char **expansions = libpostal_expand_address(charbuff.data(), options, &num_expansions);
+  
       if ( num_expansions > MAX_NUMBER_OF_EXPANSIONS )
         {
           std::cout << "Warning: large number [" << num_expansions << "] of normalization expansions of " << d.name
@@ -591,7 +591,7 @@ void normalize_libpostal(sqlite3pp::database& db)
         }
 
       // Free expansions
-      expansion_array_destroy(expansions, num_expansions);
+      libpostal_expansion_array_destroy(expansions, num_expansions);
     }
 
   std::cout << "Redundant records skipped: " << num_doubles_dropped << "\n";
