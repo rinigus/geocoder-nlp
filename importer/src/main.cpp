@@ -752,9 +752,9 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
 
   db.execute( "CREATE TEMPORARY TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, latitude REAL, longitude REAL)");
-  db.execute( "CREATE TEMPORARY TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))" );
+  db.execute( "CREATE TEMPORARY TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
-              "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
+              "FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary_tmp(id))" );
 
   std::cout << "Preliminary filling of the database" << std::endl; 
   
