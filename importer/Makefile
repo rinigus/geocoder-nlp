@@ -4,10 +4,12 @@
 # Compiler and libraries
 CXX := g++
 
-LIBPOSTAL_INCLUDE=-I/usr/local/include
+#LIBPOSTAL_INCLUDE=-I/usr/local/include
+LIBPOSTAL_INCLUDE=-I../../libpostal-install/include
 
-LIBPOSTAL_LIB=-lpostal
+#LIBPOSTAL_LIB=-lpostal
 #LIBPOSTAL_LIB=-l:libpostal.a -l:libsnappy.a
+LIBPOSTAL_LIB=-L../../libpostal-install/lib -l:libpostal.a 
 
 SQLITE_LIB=-lsqlite3
 #SQLITE_LIB=-l:libsqlite3.a
