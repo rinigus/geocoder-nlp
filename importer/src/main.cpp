@@ -503,7 +503,7 @@ void normalize_libpostal(sqlite3pp::database& db)
   // normalize all names
   size_t num_expansions;
   size_t num_doubles_dropped = 0;
-  normalize_options_t options = get_libpostal_default_options();
+  libpostal_normalize_options_t options = libpostal_get_default_options();
   std::vector<char> charbuff;
   for (tonorm &d: data)
     {
@@ -526,8 +526,8 @@ void normalize_libpostal(sqlite3pp::database& db)
         }
       
   
-      char **expansions = expand_address(charbuff.data(), options, &num_expansions);
-
+      char **expansions = libpostal_expand_address(charbuff.data(), options, &num_expansions);
+  
       if ( num_expansions > MAX_NUMBER_OF_EXPANSIONS )
         {
           std::cout << "Warning: large number [" << num_expansions << "] of normalization expansions of " << d.name
@@ -591,7 +591,7 @@ void normalize_libpostal(sqlite3pp::database& db)
         }
 
       // Free expansions
-      expansion_array_destroy(expansions, num_expansions);
+      libpostal_expansion_array_destroy(expansions, num_expansions);
     }
 
   std::cout << "Redundant records skipped: " << num_doubles_dropped << "\n";
@@ -752,9 +752,9 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
 
   db.execute( "CREATE TEMPORARY TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, latitude REAL, longitude REAL)");
-  db.execute( "CREATE TEMPORARY TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary(id))" );
+  db.execute( "CREATE TEMPORARY TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
-              "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
+              "FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary_tmp(id))" );
 
   std::cout << "Preliminary filling of the database" << std::endl; 
   
