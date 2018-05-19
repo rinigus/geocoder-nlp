@@ -114,6 +114,6 @@ time address_parser_train "$OUTPUT_ADDRESS" "$COUNTRY_DIR/address_parser"
 echo "Removing temporary directory"
 rm -rf "$TMPDATA"
 
-echo "Compressing country database"
-mkdir -p "$OUTPUT/compressed"
-(cd "$OUTPUT" && tar jcvf "compressed/$COUNTRY_DIR_BASE.tar.bz2" "$COUNTRY_DIR_BASE")
+# echo "Compressing country database"
+# mkdir -p "$OUTPUT/compressed"
+# (cd "$OUTPUT" && tar jcvf "compressed/$COUNTRY_DIR_BASE.tar.bz2" "$COUNTRY_DIR_BASE")
