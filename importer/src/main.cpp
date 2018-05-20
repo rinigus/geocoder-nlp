@@ -30,6 +30,8 @@
                                        /// check wheher the string is
                                        /// suspicious
 
+#define MAX_COMMAS 10 /// maximal number of commas allowed in a name
+
 typedef long long int sqlid; /// type used by IDs in SQLite
 
 ///////////////////////////////////////////////////////////
@@ -523,8 +525,16 @@ void normalize_libpostal(sqlite3pp::database& db)
               std::cout << "Warning: dropping suspicious name: " << d.name << "\n";
               continue;
             }
+
+          std::cout << "Seems OK: " << d.name << std::endl;
         }
-      
+
+      // check if there are too many commas
+      if ( std::count(d.name.begin(), d.name.end(), ',') > MAX_COMMAS )
+        {
+          std::cout << "Warning: dropping suspicious name - too many commas: " << d.name << "\n";
+          continue;
+        }
   
       char **expansions = libpostal_expand_address(charbuff.data(), options, &num_expansions);
   
