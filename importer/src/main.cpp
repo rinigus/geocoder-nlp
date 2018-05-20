@@ -525,8 +525,6 @@ void normalize_libpostal(sqlite3pp::database& db)
               std::cout << "Warning: dropping suspicious name: " << d.name << "\n";
               continue;
             }
-
-          std::cout << "Seems OK: " << d.name << std::endl;
         }
 
       // check if there are too many commas
