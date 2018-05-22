@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
   Geocoder geo(argv[1]);
   geo.set_max_queries_per_hierarchy(30);
   geo.set_max_results(25);
-  geo.set_result_language("en");
+  //geo.set_result_language("en");
 
   std::vector<Geocoder::GeoResult> result;
 
@@ -76,7 +76,7 @@ int main(int argc, char *argv[])
       std::cout << r.title << "\n"
 		<< r.address << "\n"
 		<< r.latitude << ", " << r.longitude << "\n"
-		<< r.type << " / " << r.id << " / " << r.levels_resolved << "\n\n";
+		<< r.type << " / " << r.id << " / " << r.admin_levels << " / " << r.levels_resolved << "\n\n";
       counter++;
     }
 
