@@ -467,7 +467,7 @@ protected:
 
 ////////////////////////////////////////////////////////////////////////////
 /// Libpostal normalization with search string expansion
-void normalize_libpostal(sqlite3pp::database& db)
+void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_dir, bool verbose)
 {
   struct tonorm
   {
@@ -502,6 +502,15 @@ void normalize_libpostal(sqlite3pp::database& db)
       return;
     }
 
+  std::vector<char> aed(address_expansion_dir.begin(), address_expansion_dir.end());
+  aed.push_back(0);
+  if ( (address_expansion_dir.empty() && !libpostal_setup_parser() ) ||
+       (!address_expansion_dir.empty() && !libpostal_setup_parser_datadir(aed.data())) )
+    {
+      std::cerr << "Failure to load libpostal parser" << std::endl;
+      return;
+    }
+
   // normalize all names
   size_t num_expansions;
   size_t num_doubles_dropped = 0;
@@ -511,6 +520,8 @@ void normalize_libpostal(sqlite3pp::database& db)
     {
       charbuff.resize(d.name.length() + 1);
       std::copy(d.name.c_str(), d.name.c_str() + d.name.length() + 1, charbuff.begin());
+
+      if (verbose) std::cout << d.name << ": " << std::flush;
 
       // check for sanity before we proceed with expansion
       if ( d.name.length() > LENGTH_STARTING_SUSP_CHECK )
@@ -600,11 +611,14 @@ void normalize_libpostal(sqlite3pp::database& db)
 
       // Free expansions
       libpostal_expansion_array_destroy(expansions, num_expansions);
+
+      if (verbose) std::cout << "done" << std::endl;
     }
 
   std::cout << "Redundant records skipped: " << num_doubles_dropped << "\n";
   
   // Teardown libpostal
+  libpostal_teardown_parser();
   libpostal_teardown();
   libpostal_teardown_language_classifier();
 }
@@ -721,15 +735,20 @@ int main(int argc, char* argv[])
   
   if (argc<3)
     {
-      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> [<postal_country_parser_code>]\n";
+      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> [<postal_country_parser_code>] [address_parser_directory] [verbose]\n";
+      std::cerr << "When using optional parameters, you have to specify all of the perceiving ones\n";
       return 1;
     }
 
   std::string map = argv[1];
   std::string database_path = argv[2];
   std::string postal_country_parser;
+  std::string postal_address_parser_dir;
+  bool verbose_address_expansion = false;
 
   if (argc > 3) postal_country_parser = argv[3];
+  if (argc > 4) postal_address_parser_dir = argv[4];
+  if (argc > 5 && strcmp("verbose", argv[5])==0 ) verbose_address_expansion = true;
 
   osmscout::DatabaseParameter databaseParameter;
   osmscout::DatabaseRef database(new osmscout::Database(databaseParameter));
@@ -806,7 +825,7 @@ int main(int argc, char* argv[])
 
   std::cout << "Normalize using libpostal" << std::endl;
   
-  normalize_libpostal(db);
+  normalize_libpostal(db, postal_address_parser_dir, verbose_address_expansion);
   normalized_to_final(db, database_path);
   
   // Create R*Tree for nearest neighbor search
