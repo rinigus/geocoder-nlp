@@ -27,9 +27,9 @@ int main(int argc, char *argv[])
   Postal::ParseResult nonorm;
 
   postal.set_postal_datadir(argv[2], argv[3]);
-  postal.add_language("da");
-  postal.add_language("et");
-  postal.add_language("en");
+  // postal.add_language("da");
+  // postal.add_language("et");
+  // postal.add_language("en");
   postal.set_initialize_every_call(true);
   
   postal.parse(query, parsed_query, nonorm);
