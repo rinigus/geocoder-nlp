@@ -6,6 +6,7 @@
 #include <osmscout/Database.h>
 #include <osmscout/LocationService.h>
 #include <osmscout/TypeFeatures.h>
+#include <osmscout/FeatureReader.h>
 
 #include "geocoder.h"
 

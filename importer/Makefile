@@ -14,6 +14,8 @@ LIBPOSTAL_LIB=-lpostal
 SQLITE_LIB=-lsqlite3
 #SQLITE_LIB=-l:libsqlite3.a
 
+OSMSCOUT=$(shell pwd)/libosmscout/install
+
 #LD_EXTRA_OPTIONS += -pthread -ldl -static-libgcc -static-libstdc++
 
 #CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG_QUERIES
@@ -26,8 +28,8 @@ APPNAME := importer
 SRCSUBDIR := src
 OBJSUBDIR := obj
 
-INCLUDE  = $(LIBPOSTAL_INCLUDE) -I../src -I../thirdparty/sqlite3pp/headeronly_src -I$(SRCSUBDIR) -I/usr/local/libosmscout/include
-LIBRARIES += $(LIBPOSTAL_LIB) $(SQLITE_LIB) -losmscout -lmarisa -lkyotocabinet
+INCLUDE  = -I$(OSMSCOUT)/include $(LIBPOSTAL_INCLUDE) -I../src -I../thirdparty/sqlite3pp/headeronly_src -I$(SRCSUBDIR)
+LIBRARIES += -L$(OSMSCOUT)/lib $(LIBPOSTAL_LIB) $(SQLITE_LIB) -losmscout -lmarisa -lkyotocabinet -Wl,-rpath=$(OSMSCOUT)/lib
 
 OBJS	= $(patsubst $(SRCSUBDIR)/%.cpp,$(OBJSUBDIR)/%.o,$(wildcard $(SRCSUBDIR)/*.cpp)) \
 	  $(patsubst ../src/%.cpp,$(OBJSUBDIR)/main_%.o,$(wildcard ../src/*.cpp))
