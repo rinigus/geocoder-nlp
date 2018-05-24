@@ -232,7 +232,7 @@ public:
     m_parent(parent)
   {}
 
-  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::Location &location, const osmscout::Address &address)
+  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::PostalArea &postalArea, const osmscout::Location &location, const osmscout::Address &address)
   {
     std::string type;
     std::string name;
@@ -270,15 +270,15 @@ protected:
 };
 
 //////////////////////////////////////////////////
-class LocVisitor: public osmscout::LocationVisitor
+class PoiVisitor: public osmscout::POIVisitor
 {
 public:
-  LocVisitor(osmscout::DatabaseRef &database, sqlite3pp::database &db, sqlid parent):
+  PoiVisitor(osmscout::DatabaseRef &database, sqlite3pp::database &db, sqlid parent):
     m_database(database),
     m_db(db),
     m_parent(parent)
   {}
- 
+  
   virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::POI &poi)
   {
     std::string type;
@@ -310,7 +310,23 @@ public:
     return true;
   }
 
-  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::Location &location)
+protected:
+  osmscout::DatabaseRef &m_database;
+  sqlite3pp::database &m_db;
+  sqlid m_parent;
+};
+
+///////////////////////////////////////////////////////
+class LocVisitor: public osmscout::LocationVisitor
+{
+public:
+  LocVisitor(osmscout::DatabaseRef &database, sqlite3pp::database &db, sqlid parent):
+    m_database(database),
+    m_db(db),
+    m_parent(parent)
+  {}
+ 
+  virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::PostalArea &postalArea, const osmscout::Location &location)
   {
     std::string type;
     std::string name;
@@ -347,7 +363,7 @@ public:
     write_type(m_db, id, type);
     
     AddrVisitor addr(m_database, m_db, locID);
-    m_database->GetLocationIndex()->VisitLocationAddresses(adminRegion, location, addr);
+    m_database->GetLocationIndex()->VisitAddresses(adminRegion, postalArea, location, addr);
 
     return true;
   }
@@ -455,7 +471,11 @@ public:
       }
 
     LocVisitor loc(m_database, m_db, regionID);
-    m_database->GetLocationIndex()->VisitAdminRegionLocations(region, loc, false);
+    for (const osmscout::PostalArea &parea: region.postalAreas)
+      m_database->GetLocationIndex()->VisitLocations(region, parea, loc, false);
+    
+    PoiVisitor poi(m_database, m_db, regionID);
+    m_database->GetLocationIndex()->VisitPOIs(region, poi, false);
     
     return osmscout::AdminRegionVisitor::visitChildren;
   };
