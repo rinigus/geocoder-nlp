@@ -1109,6 +1109,12 @@ TYPES
     IGNORE // No visualisation yet
     = NODE ("amenity"=="drinking_water")
       GROUP amenity
+      
+  TYPE amenity_embassy
+    = NODE AREA ("amenity"=="embassy")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
 
   TYPE amenity_ev_charging
     IGNORE // No visualisation yet
