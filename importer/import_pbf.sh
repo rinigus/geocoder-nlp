@@ -25,7 +25,15 @@ echo Make directory: $D
 mkdir -p "$D"/tmp
 
 export LD_LIBRARY_PATH="$PROGPATH"/libosmscout/install/lib
-"$PROGPATH"/libosmscout/install/bin/Import --typefile "$PROGPATH"/stylesheet/map.ost --delete-temporary-files true --delete-debugging-files true --delete-analysis-files true --delete-report-files true --destinationDirectory "$D"/tmp "$1"
+
+#######################################################
+# list the modules required to generate location index
+#
+# modules were found by logging the full import and checking
+# which files provide and require the needed files
+for module in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 17 22; do
+    "$PROGPATH"/libosmscout/install/bin/Import -s $module -e $module --typefile "$PROGPATH"/stylesheet/map.ost --destinationDirectory "$D"/tmp "$1" 
+done
 
 "$PROGPATH"/importer "$D"/tmp "$D"
 
