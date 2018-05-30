@@ -18,6 +18,7 @@
 
 #include <map>
 #include <deque>
+#include <set>
 #include <cctype>
 #include <fstream>
 #include <algorithm>
@@ -32,6 +33,8 @@
                                        /// suspicious
 
 #define MAX_COMMAS 10 /// maximal number of commas allowed in a name
+
+#define TEMPORARY "" //"TEMPORARY" // set to empty if need to debug import
 
 typedef long long int sqlid; /// type used by IDs in SQLite
 
@@ -95,6 +98,11 @@ protected:
 ////////////////////////////////////////////////////////////////
 /// Global variable tracking IDs and administrative relationship
 IDTracker IDs;
+
+////////////////////////////////////////////////////////////////
+/// Track locations and POIs to avoid adding them in duplicate
+/// via location and POI visitors
+std::set< std::string > m_address_poi_inserted;
 
 //////////////////////////////////////////////////////////////
 /// libosmscout helper functions
@@ -239,15 +247,28 @@ public:
     std::string name;
     std::string name_en;
     osmscout::GeoCoord coordinates;
+    std::string scoutid = address.object.GetName();
     sqlid id;
+
+    // check if we have this object inserted already
+    if (m_address_poi_inserted.count(scoutid) > 0)
+      {
+        // GetObjectNames(m_database, address.object, name, name_en);
+        // std::cout << "AddrVisitor: " << address.name << " " << name << " " << scoutid << " inserted already\n";
+        return true;
+      }
+
+    // new object, insert into set
+    m_address_poi_inserted.insert(scoutid);
     
     GetObjectTypeCoor(m_database, address.object, type, coordinates);
     id = IDs.next();
 
     GetObjectNames(m_database, address.object, name, name_en);
-      
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
+                 << scoutid
                  << address.name
                  << name
                  << name_en
@@ -286,15 +307,28 @@ public:
     std::string name;
     std::string name_en;
     osmscout::GeoCoord coordinates;
+    std::string scoutid = poi.object.GetName();
     sqlid id;
     
+    // check if we have this object inserted already
+    if (m_address_poi_inserted.count(scoutid) > 0)
+      {
+        // GetObjectNames(m_database, poi.object, name, name_en);
+        // std::cout << "POIVisitor: " << poi.name << " " << name << " " << scoutid << " inserted already\n";
+        return true;
+      }
+
+    // new object, insert into set
+    m_address_poi_inserted.insert(scoutid);
+
     GetObjectTypeCoor(m_database, poi.object, type, coordinates);
     id = IDs.next();
 
     GetObjectNames(m_database, poi.object, name, name_en);
-    
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
+
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
+                 << scoutid
                  << poi.name
                  << name
                  << name_en
@@ -514,7 +548,7 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
 
   // make a new table for normalized names
   db.execute("DROP TABLE IF EXISTS normalized_name");
-  db.execute("CREATE TEMPORARY TABLE normalized_name (prim_id INTEGER, name TEXT NOT NULL, PRIMARY KEY (name, prim_id))");
+  db.execute("CREATE " TEMPORARY " TABLE normalized_name (prim_id INTEGER, name TEXT NOT NULL, PRIMARY KEY (name, prim_id))");
 
   // load libpostal
   if (!libpostal_setup() || !libpostal_setup_language_classifier())
@@ -799,8 +833,8 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS object_type_tmp" );
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
 
-  db.execute( "CREATE TEMPORARY TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, latitude REAL, longitude REAL)");
-  db.execute( "CREATE TEMPORARY TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))" );
+  db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, scoutid TEXT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, latitude REAL, longitude REAL)");
+  db.execute( "CREATE " TEMPORARY " TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
               "FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary_tmp(id))" );
 
@@ -821,7 +855,7 @@ int main(int argc, char* argv[])
 
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
   db.execute( "INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp" );
-  db.execute( "CREATE TEMPORARY TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+  db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
               "name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
               "FOREIGN KEY (type_id) REFERENCES type(id))");
   
@@ -832,7 +866,7 @@ int main(int argc, char* argv[])
               "FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
               "JOIN type ON tt.type=type.name" );
 
-  db.execute( "CREATE TEMPORARY TABLE boxids (id INTEGER PRIMARY KEY AUTOINCREMENT, boxstr TEXT, CONSTRAINT struni UNIQUE (boxstr))" );
+  db.execute( "CREATE " TEMPORARY " TABLE boxids (id INTEGER PRIMARY KEY AUTOINCREMENT, boxstr TEXT, CONSTRAINT struni UNIQUE (boxstr))" );
   db.execute( "INSERT INTO boxids (boxstr) SELECT DISTINCT boxstr FROM object_primary_tmp2" );
 
   db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, "
