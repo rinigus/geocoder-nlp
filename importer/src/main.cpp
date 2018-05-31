@@ -34,7 +34,7 @@
 
 #define MAX_COMMAS 10 /// maximal number of commas allowed in a name
 
-#define TEMPORARY "" //"TEMPORARY" // set to empty if need to debug import
+#define TEMPORARY "TEMPORARY" // set to empty if need to debug import
 
 typedef long long int sqlid; /// type used by IDs in SQLite
 
