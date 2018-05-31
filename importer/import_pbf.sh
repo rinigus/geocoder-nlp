@@ -14,12 +14,15 @@ if [ "$#" -eq 1 ]; then
 
 elif [ "$#" -eq 2 ]; then
     D=${2}
+elif [ "$#" -eq 3 ]; then
+    D=${2}
+    POSTAL=${3}
 else
     echo "Usage: ./import_pbf.sh openstreetmapfilename [imported-dir-name]"
     exit 0    
 fi
 
-PROGPATH=$(dirname "$0")
+PROGPATH=$(dirname `realpath "$0"`)
 
 echo Make directory: $D
 mkdir -p "$D"/tmp
@@ -35,7 +38,11 @@ for module in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 17 22; do
     "$PROGPATH"/libosmscout/install/bin/Import -s $module -e $module --typefile "$PROGPATH"/stylesheet/map.ost --destinationDirectory "$D"/tmp "$1" 
 done
 
-"$PROGPATH"/importer "$D"/tmp "$D"
+if [ "$#" -eq 3 ]; then
+    "$PROGPATH"/importer "$D"/tmp "$D" "$POSTAL"
+else
+    "$PROGPATH"/importer "$D"/tmp "$D"
+fi
 
 echo Removing temporary files
 rm -rf "$D"/tmp
