@@ -1225,6 +1225,12 @@ TYPES
     = NODE ("amenity"=="photo_booth")
       GROUP amenity
 
+  TYPE amenity_police
+    = NODE AREA ("amenity"=="police")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_post_office_building
     = AREA ("amenity"=="post_office" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
       {Name, NameAlt}
