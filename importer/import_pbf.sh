@@ -27,7 +27,7 @@ PROGPATH=$(dirname `realpath "$0"`)
 echo Make directory: $D
 mkdir -p "$D"/tmp
 
-export LD_LIBRARY_PATH="$PROGPATH"/libosmscout/install/lib
+export LD_LIBRARY_PATH="$PROGPATH"/libosmscout/install/lib:$LD_LIBRARY_PATH
 
 #######################################################
 # list the modules required to generate location index
