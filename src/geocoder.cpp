@@ -328,7 +328,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
 
       if ( last_level ||
            last_subobject <= id ||
-           !search(parsed, result, level+1, id, last_subobject) )
+           !search(parsed, result, level+1, id+1, last_subobject) )
         {
           size_t levels_resolved = level+1;
           if ( m_levels_resolved < levels_resolved )
