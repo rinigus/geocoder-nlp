@@ -35,7 +35,7 @@ export LD_LIBRARY_PATH="$PROGPATH"/libosmscout/install/lib:$LD_LIBRARY_PATH
 # modules were found by logging the full import and checking
 # which files provide and require the needed files
 for module in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 17 22; do
-    "$PROGPATH"/libosmscout/install/bin/Import -s $module -e $module --typefile "$PROGPATH"/stylesheet/map.ost --destinationDirectory "$D"/tmp "$1" 
+    "$PROGPATH"/libosmscout/install/bin/Import --altLangOrder en -s $module -e $module --typefile "$PROGPATH"/stylesheet/map.ost --destinationDirectory "$D"/tmp "$1" 
 done
 
 if [ "$#" -eq 3 ]; then
