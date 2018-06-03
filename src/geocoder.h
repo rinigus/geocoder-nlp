@@ -120,6 +120,12 @@ namespace GeoNLP {
     static bool get_id_range(std::string &v, bool full_range, index_id_value range0, index_id_value range1,
                              index_id_value* *idx0, index_id_value* *idx1);
 
+    // support for sorting by distance
+    static bool distcomp(const Geocoder::GeoResult &i, const Geocoder::GeoResult &j) { return (i.distance<j.distance); }
+    
+    template<typename T>
+    static void sort_by_distance(T begin, T end) { std::sort(begin, end, distcomp); }
+
   protected:
     bool search(const Postal::Hierarchy &parsed, std::vector<GeoResult> &result, size_t level=0,
                 long long int range0=0, long long int range1=0);

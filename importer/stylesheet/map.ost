@@ -957,6 +957,11 @@ TYPES
      POI
      MERGE_AREAS
 
+  TYPE leisure_playground
+    = NODE AREA ("leisure"=="playground")
+      {Name, NameAlt}
+      ADDRESS POI
+
   TYPE leisure_sports_centre
     = NODE AREA ("leisure"=="sports_centre")
       {Name, NameAlt}
@@ -1052,14 +1057,10 @@ TYPES
       ADDRESS POI
       GROUP amenity
 
-  TYPE amenity_bicycle_parking_building
-    = AREA ("amenity"=="bicycle_parking" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      GROUP amenity, building
-
   TYPE amenity_bicycle_parking
     = NODE WAY AREA ("amenity"=="bicycle_parking")
       {Name, NameAlt, Width}
+      POI
       GROUP amenity, building
 
   TYPE amenity_bench
@@ -1084,8 +1085,9 @@ TYPES
       GROUP amenity
 
   TYPE amenity_charging_station
-    IGNORE // No visualisation yet
     = NODE ("amenity"=="charging_station")
+      {Name, NameAlt}
+      ADDRESS POI
       GROUP amenity
 
   TYPE amenity_clock
@@ -1221,6 +1223,8 @@ TYPES
 
   TYPE amenity_toilets
     = NODE ("amenity"=="toilets")
+      {Name, NameAlt}
+      ADDRESS POI
       GROUP amenity
 
   TYPE amenity_vending_machine
@@ -1262,13 +1266,12 @@ TYPES
       {Name, NameAlt}
       ADDRESS POI
 
-  // Everything else is just an 'amenity' for now
-  TYPE amenity_building
-    = AREA (EXISTS "amenity" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE church
+    = NODE ("amenity"=="place_of_worship")
       {Name, NameAlt}
       ADDRESS POI
-      GROUP amenity, building
 
+  // Everything else is just an 'amenity' for now
   TYPE amenity
     = NODE (EXISTS "amenity")
       {Name, NameAlt}

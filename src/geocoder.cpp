@@ -377,6 +377,8 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, siz
       // only one entry is expected
       v.getter() >> name >> name_extra >> name_en >> parent;
 
+      if (name.empty()) name=" ";
+
       toadd = std::string();
       if (m_preferred_result_language == "en" && !name_en.empty()) toadd = name_en;
       else if (!name_extra.empty() && name != name_extra) toadd = name_extra + ", " + name;
@@ -443,11 +445,6 @@ bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value rang
   return true;
 }
 
-
-static bool distcomp(const Geocoder::GeoResult &i, const Geocoder::GeoResult &j)
-{
-  return (i.distance<j.distance);
-}
 
 bool Geocoder::search_nearby( const std::vector< std::string > &query,
                               double latitude, double longitude,
@@ -538,7 +535,7 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
 
   if ( result.size() >=  m_max_results )
     {
-      std::sort( result.begin(), result.end(), distcomp );
+      Geocoder::sort_by_distance( result.begin(), result.end() );
       result.resize(m_max_results);
     }
 

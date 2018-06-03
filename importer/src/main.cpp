@@ -22,6 +22,7 @@
 #include <cctype>
 #include <fstream>
 #include <algorithm>
+#include <locale>
 
 #define MAX_NUMBER_OF_EXPANSIONS 85 /// if there are more expansions
                                     /// that specified, this object
@@ -37,6 +38,16 @@
 #define TEMPORARY "TEMPORARY" // set to empty if need to debug import
 
 typedef long long int sqlid; /// type used by IDs in SQLite
+
+
+////////////////////////////////////////////////////////////////
+/// White list of POI types to be tracked even without name
+std::set< std::string > m_poi_types_whitelist;
+
+////////////////////////////////////////////////////////////////
+/// Track locations and POIs to avoid adding them in duplicate
+/// via location and POI visitors
+std::set< std::string > m_address_poi_inserted;
 
 ///////////////////////////////////////////////////////////
 /// Track relationship between objects and fills hierarchy
@@ -98,11 +109,6 @@ protected:
 ////////////////////////////////////////////////////////////////
 /// Global variable tracking IDs and administrative relationship
 IDTracker IDs;
-
-////////////////////////////////////////////////////////////////
-/// Track locations and POIs to avoid adding them in duplicate
-/// via location and POI visitors
-std::set< std::string > m_address_poi_inserted;
 
 //////////////////////////////////////////////////////////////
 /// libosmscout helper functions
@@ -318,13 +324,17 @@ public:
         return true;
       }
 
+    // allow POIs without name only if they are of white-listed types
+    GetObjectTypeCoor(m_database, poi.object, type, coordinates);
+    GetObjectNames(m_database, poi.object, name, name_en);
+
+    if (name.empty() && m_poi_types_whitelist.count(type) == 0)
+      return true;
+
     // new object, insert into set
     m_address_poi_inserted.insert(scoutid);
 
-    GetObjectTypeCoor(m_database, poi.object, type, coordinates);
     id = IDs.next();
-
-    GetObjectNames(m_database, poi.object, name, name_en);
 
     sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
@@ -538,6 +548,9 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
       sqlid id;
       std::string name, name_extra, name_en;
       v.getter() >> id >> name >> name_extra >> name_en;
+
+      if (name.empty())
+        continue; // no need to add empty name into search index
 
       d.id = id;
 
@@ -775,6 +788,27 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
 }
 
 
+// trim from start (in place)
+static inline void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+        return !std::isspace(ch);
+    }));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::string &s) {
+    ltrim(s);
+    rtrim(s);
+}
+
+
 ////////////////////////////////////////////////////////////////////////////
 // MAIN
 
@@ -788,23 +822,44 @@ int main(int argc, char* argv[])
       return 0;
     }
   
-  if (argc<3)
+  if (argc<4)
     {
-      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> [<postal_country_parser_code>] [address_parser_directory] [verbose]\n";
+      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> <whitelist file> [<postal_country_parser_code>] [address_parser_directory] [verbose]\n";
       std::cerr << "When using optional parameters, you have to specify all of the perceiving ones\n";
       return 1;
     }
 
   std::string map = argv[1];
   std::string database_path = argv[2];
+  std::string whitelist_file = argv[3];
   std::string postal_country_parser;
   std::string postal_address_parser_dir;
   bool verbose_address_expansion = false;
 
-  if (argc > 3) postal_country_parser = argv[3];
-  if (argc > 4) postal_address_parser_dir = argv[4];
-  if (argc > 5 && strcmp("verbose", argv[5])==0 ) verbose_address_expansion = true;
+  if (argc > 4) postal_country_parser = argv[4];
+  if (argc > 5) postal_address_parser_dir = argv[5];
+  if (argc > 6 && strcmp("verbose", argv[6])==0 ) verbose_address_expansion = true;
 
+  // fill white list
+  {
+    std::ifstream f(whitelist_file);
+    std::string line;
+    if (!f)
+      {
+        std::cerr << "Failed to open whitelist file: " << whitelist_file << std::endl;
+        return -1;
+      }
+    
+    while (std::getline(f, line))
+      {
+        trim(line);
+        if (!line.empty())
+          m_poi_types_whitelist.insert(line);
+        std::cout << "Whitelisted: " << line << "\n";
+      }
+  }
+
+  // load the database and proceed with import
   osmscout::DatabaseParameter databaseParameter;
   osmscout::DatabaseRef database(new osmscout::Database(databaseParameter));
 

@@ -39,9 +39,9 @@ for module in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 17 22; do
 done
 
 if [ "$#" -eq 3 ]; then
-    "$PROGPATH"/importer "$D"/tmp "$D" "$POSTAL"
+    "$PROGPATH"/importer "$D"/tmp "$D" "$PROGPATH"/stylesheet/whitelist "$POSTAL"
 else
-    "$PROGPATH"/importer "$D"/tmp "$D"
+    "$PROGPATH"/importer "$D"/tmp "$D" "$PROGPATH"/stylesheet/whitelist 
 fi
 
 echo Removing temporary files
