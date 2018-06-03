@@ -91,7 +91,7 @@ public:
         sqlid id = a.first;
         sqlid last_id = a.second;
         if (id >= last_id) continue;
-	
+
         sqlite3pp::command cmd(db, "INSERT INTO hierarchy (prim_id, last_subobject) VALUES (?, ?)");
         cmd.binder() << id << last_id;
         cmd.execute();
@@ -100,10 +100,10 @@ public:
 
 protected:
   sqlid NextID = 1;
-  
+
   std::map<osmscout::FileOffset, sqlid> m_ids;
   std::map<sqlid, sqlid> m_parent;
-  std::map<sqlid, sqlid> m_last_child;  
+  std::map<sqlid, sqlid> m_last_child;
 };
 
 ////////////////////////////////////////////////////////////////
@@ -159,7 +159,7 @@ typedef osmscout::FeatureValueReader<osmscout::NameFeature,osmscout::NameFeature
 NameAltReader *nameAltReader{NULL};
 NameReader *nameReader{NULL};
 void GetNames(const osmscout::FeatureValueBuffer &features, std::string &name, std::string &name_en)
-{  
+{
   osmscout::NameFeatureValue *nameValue=nameReader->GetValue(features);
   if (nameValue != NULL)
     name = nameValue->GetName();
@@ -174,7 +174,7 @@ void GetNames(const osmscout::FeatureValueBuffer &features, std::string &name, s
   //       {
   //         osmscout::FeatureRef feature=featureInstance.GetFeature();
   //         std::string fname = feature->GetName();
-          
+
   //         if (fname == "NameAlt" && feature->HasValue())
   //           {
   //             osmscout::FeatureValue *value=features.GetValue(featureInstance.GetIndex());
@@ -187,7 +187,7 @@ void GetNames(const osmscout::FeatureValueBuffer &features, std::string &name, s
   //       }
   //   }
 
-  // return name_en;  
+  // return name_en;
 }
 
 void GetObjectNames( const osmscout::DatabaseRef& database,
@@ -206,7 +206,7 @@ void GetObjectNames( const osmscout::DatabaseRef& database,
   else if (object.GetType()==osmscout::RefType::refArea)
     {
       osmscout::AreaRef area;
-      
+
       if (database->GetAreaByOffset(object.GetFileOffset(),
                                     area))
         GetNames(area->GetFeatureValueBuffer(), name, name_en);
@@ -266,7 +266,7 @@ public:
 
     // new object, insert into set
     m_address_poi_inserted.insert(scoutid);
-    
+
     GetObjectTypeCoor(m_database, address.object, type, coordinates);
     id = IDs.next();
 
@@ -281,7 +281,7 @@ public:
                  << m_parent
                  << coordinates.GetLon()
                  << coordinates.GetLat();
-    
+
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "Error inserting addr " << address.name << "\n";
 
@@ -306,7 +306,7 @@ public:
     m_db(db),
     m_parent(parent)
   {}
-  
+
   virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::POI &poi)
   {
     std::string type;
@@ -315,7 +315,7 @@ public:
     osmscout::GeoCoord coordinates;
     std::string scoutid = poi.object.GetName();
     sqlid id;
-    
+
     // check if we have this object inserted already
     if (m_address_poi_inserted.count(scoutid) > 0)
       {
@@ -345,7 +345,7 @@ public:
                  << m_parent
                  << coordinates.GetLon()
                  << coordinates.GetLat();
-    
+
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "Error inserting POI " << poi.name << "\n";
 
@@ -370,7 +370,7 @@ public:
     m_db(db),
     m_parent(parent)
   {}
- 
+
   virtual bool Visit(const osmscout::AdminRegion &adminRegion, const osmscout::PostalArea &postalArea, const osmscout::Location &location)
   {
     std::string type;
@@ -385,13 +385,13 @@ public:
         std::cout << "Location " << location.name << " has no objects, skipping\n";
         return true;
       }
-    
+
     GetObjectTypeCoor(m_database, location.objects[ location.objects.size()/2 ], type, coordinates);
     locID = id = IDs.next();
     IDs.set_id(location.locationOffset, id);
-    
+
     GetObjectNames(m_database, location.objects[ location.objects.size()/2 ], name, name_en);
-    
+
     sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << location.name
@@ -406,7 +406,7 @@ public:
 
     IDs.set_parent(id, m_parent, true);
     write_type(m_db, id, type);
-    
+
     AddrVisitor addr(m_database, m_db, locID);
     m_database->GetLocationIndex()->VisitAddresses(adminRegion, postalArea, location, addr);
 
@@ -429,7 +429,7 @@ public:
     m_database(database),
     m_db(db)
   {}
-  
+
   virtual osmscout::AdminRegionVisitor::Action Visit(const osmscout::AdminRegion &region)
   {
     // insert region first
@@ -439,13 +439,13 @@ public:
     osmscout::GeoCoord coordinates;
     sqlid id;
     sqlid regionID;
-    
+
     GetObjectTypeCoor(m_database, region.object, type, coordinates);
     regionID = id = IDs.next();
     IDs.set_id(region.regionOffset, id);
 
     GetObjectNames(m_database, region.object, name, name_en);
-    
+
     sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << region.name
@@ -455,7 +455,7 @@ public:
                  << coordinates.GetLon()
                  << coordinates.GetLat();
     IDs.set_parent(id, region.parentRegionOffset, true);
-    
+
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "Error inserting region " << region.name << "\n";
 
@@ -469,12 +469,12 @@ public:
              region.aliasName) != saved_names.end() )
       {
         sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
-	
+
         GetObjectTypeCoor(m_database, region.aliasObject, type, coordinates);
         id = IDs.next();
-	
+
         GetObjectNames(m_database, region.aliasObject, name, name_en);
-        
+
         cmd.binder() << id
                      << region.aliasName
                      << name
@@ -484,7 +484,7 @@ public:
                      << coordinates.GetLat();
         if (cmd.execute() != SQLITE_OK)
           std::cerr << "Error inserting region alias " << region.aliasName << "\n";
-	
+
         write_type(m_db, id, type);
         IDs.set_parent(id, region.parentRegionOffset);
       }
@@ -500,7 +500,7 @@ public:
         saved_names.push_back(alias.name);
 
         // no name_en here
-        
+
         sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
         id = IDs.next();
         cmd.binder() << id
@@ -510,7 +510,7 @@ public:
                      << coordinates.GetLat();
         if (cmd.execute() != SQLITE_OK)
           std::cerr << "Error inserting region alias 2 " << alias.name << "\n";
-	
+
         write_type(m_db, id, type);
         IDs.set_parent(id, region.parentRegionOffset);
       }
@@ -518,10 +518,10 @@ public:
     LocVisitor loc(m_database, m_db, regionID);
     for (const osmscout::PostalArea &parea: region.postalAreas)
       m_database->GetLocationIndex()->VisitLocations(region, parea, loc, false);
-    
+
     PoiVisitor poi(m_database, m_db, regionID);
     m_database->GetLocationIndex()->VisitPOIs(region, poi, false);
-    
+
     return osmscout::AdminRegionVisitor::visitChildren;
   };
 
@@ -612,9 +612,9 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
           std::cout << "Warning: dropping suspicious name - too many commas: " << d.name << "\n";
           continue;
         }
-  
+
       char **expansions = libpostal_expand_address(charbuff.data(), options, &num_expansions);
-  
+
       if ( num_expansions > MAX_NUMBER_OF_EXPANSIONS )
         {
           std::cout << "Warning: large number [" << num_expansions << "] of normalization expansions of " << d.name
@@ -625,7 +625,7 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
 
           continue; // don't insert it, its probably wrong anyway
         }
-      
+
       for (size_t i = 0; i < num_expansions; i++)
         {
           sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
@@ -634,10 +634,10 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
                        << s;
           if (cmd.execute() != SQLITE_OK)
             {
-	      // std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
-	      num_doubles_dropped++;
-	    }
-	  
+              // std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+              num_doubles_dropped++;
+            }
+
           // to cover the street names that have Dr. or the firstname
           // in the front of the mainly used name, add substrings into
           // the normalized table as well
@@ -653,28 +653,28 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
                   if (spacefound && c!=' ')
                     break;
                 }
-	      
+
               if (pos < s.length())
                 {
-		  try {
-		    sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
-		    std::string s = expansions[i];
-		    cmd.binder() << d.id
-				 << s.substr(pos);
-		    if (cmd.execute() != SQLITE_OK)
-		      {
-			//std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
-			num_doubles_dropped++;
-		      }
-		  }
-		  catch (sqlite3pp::database_error e)
-		    {
-		      num_doubles_dropped++;
-		    }
-		  
+                  try {
+                    sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
+                    std::string s = expansions[i];
+                    cmd.binder() << d.id
+                                 << s.substr(pos);
+                    if (cmd.execute() != SQLITE_OK)
+                      {
+                        //std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+                        num_doubles_dropped++;
+                      }
+                  }
+                  catch (sqlite3pp::database_error e)
+                    {
+                      num_doubles_dropped++;
+                    }
+
                 }
             }
-	  
+
         }
 
       // Free expansions
@@ -684,7 +684,7 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
     }
 
   std::cout << "Redundant records skipped: " << num_doubles_dropped << "\n";
-  
+
   // Teardown libpostal
   libpostal_teardown_parser();
   libpostal_teardown();
@@ -696,7 +696,7 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
 void normalized_to_final(sqlite3pp::database& db, std::string path)
 {
   std::cout << "Inserting normalized data into MARISA trie" << std::endl;
-  
+
   marisa::Keyset keyset;
 
   {
@@ -708,7 +708,7 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
         keyset.push_back(name.c_str());
       }
   }
-  
+
   marisa::Trie trie;
   trie.build(keyset);
   trie.save(GeoNLP::Geocoder::name_normalized_trie(path).c_str());
@@ -743,7 +743,7 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
         }
       else
         {
-          std::cerr << "Error: cannot find in MARISA trie: " <<  d.name << std::endl;          
+          std::cerr << "Error: cannot find in MARISA trie: " <<  d.name << std::endl;
         }
     }
 
@@ -754,7 +754,7 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
     db.tune_options(kyotocabinet::HashDB::TSMALL | kyotocabinet::HashDB::TLINEAR);
     db.tune_alignment(0);
     db.tune_defrag(8);
-    
+
     // open the database
     if (!db.open(GeoNLP::Geocoder::name_normalized_id(path).c_str(),
                  kyotocabinet::HashDB::OWRITER | kyotocabinet::HashDB::OCREATE))
@@ -768,7 +768,7 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
       keys.push_back( GeoNLP::Geocoder::make_id_key(a.first) );
 
     std::sort( keys.begin(), keys.end() );;
-    
+
     for (auto key: keys)
       {
         std::string value = GeoNLP::Geocoder::make_id_value( bdata[GeoNLP::Geocoder::get_id_key(key)] );
@@ -780,7 +780,7 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
       }
 
     std::cout << "Number of records in normalized id database: " << db.count() << "\n";
-    
+
     db.close();
   }
 
@@ -821,7 +821,7 @@ int main(int argc, char* argv[])
         std::cout << GeoNLP::Geocoder::version << "\n";
       return 0;
     }
-  
+
   if (argc<4)
     {
       std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> <whitelist file> [<postal_country_parser_code>] [address_parser_directory] [verbose]\n";
@@ -840,6 +840,8 @@ int main(int argc, char* argv[])
   if (argc > 5) postal_address_parser_dir = argv[5];
   if (argc > 6 && strcmp("verbose", argv[6])==0 ) verbose_address_expansion = true;
 
+  std::cout << "Starting import: " << map << " -> " << database_path << "\n";
+
   // fill white list
   {
     std::ifstream f(whitelist_file);
@@ -849,7 +851,7 @@ int main(int argc, char* argv[])
         std::cerr << "Failed to open whitelist file: " << whitelist_file << std::endl;
         return -1;
       }
-    
+
     while (std::getline(f, line))
       {
         trim(line);
@@ -871,9 +873,9 @@ int main(int argc, char* argv[])
 
   nameReader = new NameReader(*database->GetTypeConfig());
   nameAltReader = new NameAltReader(*database->GetTypeConfig());
-  
+
   sqlite3pp::database db(GeoNLP::Geocoder::name_primary(database_path).c_str());
-			 
+
   db.execute( "PRAGMA journal_mode = OFF" );
   db.execute( "PRAGMA synchronous = OFF" );
   db.execute( "PRAGMA cache_size = 2000000" );
@@ -887,19 +889,20 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS object_type" );
   db.execute( "DROP TABLE IF EXISTS object_type_tmp" );
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
+  db.execute( "DROP TABLE IF EXISTS object_primary_rtree" );
 
   db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, scoutid TEXT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, latitude REAL, longitude REAL)");
   db.execute( "CREATE " TEMPORARY " TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
-              "FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary_tmp(id))" );
+              "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
 
-  std::cout << "Preliminary filling of the database" << std::endl; 
-  
+  std::cout << "Preliminary filling of the database" << std::endl;
+
   osmscout::LocationIndexRef locationIndex = database->GetLocationIndex();
   AdminVisitor vis_admin(database, db);
   locationIndex->VisitAdminRegions(vis_admin);
   IDs.write_hierarchy(db);
-  
+
   // cleanup from duplicated names
   // db.execute( "UPDATE object_primary_tmp SET name_extra=NULL WHERE name_extra='' OR name=name_extra" );
   // db.execute( "UPDATE object_primary_tmp SET name_en=NULL WHERE name_en='' OR name=name_en" );
@@ -913,7 +916,7 @@ int main(int argc, char* argv[])
   db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
               "name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
               "FOREIGN KEY (type_id) REFERENCES type(id))");
-  
+
   db.execute( "INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, parent, type_id, latitude, longitude, boxstr) "
               "SELECT p.id, p.name, p.name_extra, p.name_en, p.parent, type.id, p.latitude, p.longitude, "
               // LINE BELOW DETERMINES ROUNDING USED FOR BOXES
@@ -927,17 +930,17 @@ int main(int argc, char* argv[])
   db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, "
               "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
               "FOREIGN KEY (type_id) REFERENCES type(id))" );
-  db.execute( "INSERT INTO object_primary (id, name, name_extra, name_en, parent, type_id, latitude, longitude, box_id) " 
+  db.execute( "INSERT INTO object_primary (id, name, name_extra, name_en, parent, type_id, latitude, longitude, box_id) "
               "SELECT o.id, name, name_extra, name_en, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
 
   db.execute( "DROP INDEX IF EXISTS idx_object_primary_box" );
   db.execute( "CREATE INDEX idx_object_primary_box ON object_primary (box_id)" );
 
   std::cout << "Normalize using libpostal" << std::endl;
-  
+
   normalize_libpostal(db, postal_address_parser_dir, verbose_address_expansion);
   normalized_to_final(db, database_path);
-  
+
   // Create R*Tree for nearest neighbor search
   std::cout << "Populating R*Tree" << std::endl;
   db.execute( "CREATE VIRTUAL TABLE object_primary_rtree USING rtree(id, minLat, maxLat, minLon, maxLon)" );
@@ -955,7 +958,7 @@ int main(int argc, char* argv[])
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "WriteSQL: error inserting version information\n";
   }
-  
+
   if ( !postal_country_parser.empty() )
     {
       std::cout << "Recording postal parser country preference: " <<  postal_country_parser << "\n";
@@ -968,6 +971,6 @@ int main(int argc, char* argv[])
   db.execute( "ANALYZE" );
 
   std::cout << "Done\n";
-  
+
   return 0;
 }
