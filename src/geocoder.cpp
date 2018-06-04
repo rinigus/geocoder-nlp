@@ -446,13 +446,14 @@ bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value rang
 }
 
 
-bool Geocoder::search_nearby( const std::vector< std::string > &query,
+bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
+                              const std::vector< std::string > &type_query,
                               double latitude, double longitude,
                               double radius,
                               std::vector<GeoResult> &result,
                               Postal &postal )
 {
-  if ( query.empty() || radius < 0 )
+  if ( (name_query.empty() && type_query.empty()) || radius < 0 )
     return false;
 
   // rough estimates of distance (meters) per degree
@@ -466,6 +467,10 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
                            "JOIN type t ON o.type_id=t.id "
                            "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
                            "WHERE " );
+
+    if (!type_query.empty())
+      for (auto tq: type_query)
+        query_txt += " t.name = '" + tq + "' AND ";
 
     query_txt += "maxLat>=:minLat AND minLat<=:maxLat AND maxLon >= :minLon AND minLon <= :maxLon";
 
@@ -493,26 +498,23 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
             continue; // skip this result
         }
 
-        // check query
-        bool found = false;
-        for ( auto q = query.cbegin(); !found && q != query.cend(); ++q )
-          found = ( type.find(*q) != std::string::npos );
-
-        if (!found)
+        // check name query
+        if (!name_query.empty())
           {
+            bool found = false;
             std::vector<std::string> expanded;
             postal.expand_string( name, expanded );
 
-            for ( auto q = query.cbegin(); !found && q != query.cend(); ++q )
+            for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
               for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
                 // search is for whether the name starts with the query or has
                 // the query after space (think of street Dr. Someone and query Someone)
                 found = ( e->compare(0, q->length(), *q) == 0  ||
                           e->find(" " + *q) != std::string::npos );
-          }
 
-        if (!found)
-          continue; // substring not found
+            if (!found)
+              continue; // substring not found
+          }
 
         GeoResult r;
         r.id = id;
