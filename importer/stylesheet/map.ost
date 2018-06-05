@@ -1118,7 +1118,7 @@ TYPES
       GROUP amenity
 
   TYPE amenity_fuel
-    = NODE ("amenity"=="fuel")
+    = NODE AREA ("amenity"=="fuel")
       {Name, NameAlt}
       ADDRESS POI
       GROUP amenity
