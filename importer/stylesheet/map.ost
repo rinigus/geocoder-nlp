@@ -1261,22 +1261,38 @@ TYPES
 
   // Churches
   TYPE christian_church
-    = NODE ("amenity"=="place_of_worship" AND
+    = NODE AREA ("amenity"=="place_of_worship" AND
             "religion"=="christian")
       {Name, NameAlt}
       ADDRESS POI
 
   TYPE church
-    = NODE ("amenity"=="place_of_worship")
+    = NODE AREA ("amenity"=="place_of_worship")
       {Name, NameAlt}
       ADDRESS POI
 
   // Everything else is just an 'amenity' for now
   TYPE amenity
-    = NODE (EXISTS "amenity")
+    = NODE AREA (EXISTS "amenity")
       {Name, NameAlt}
       ADDRESS
       GROUP amenity
+
+  //
+  // Emergencies
+  //
+
+  TYPE emergency_defibrillator
+    = NODE AREA ("emergency"=="defibrillator")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP emergency
+
+  TYPE emergency_phone
+    = NODE AREA ("emergency"=="phone")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP emergency
 
   //
   // Shops
