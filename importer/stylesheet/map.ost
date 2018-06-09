@@ -1298,7 +1298,301 @@ TYPES
   // Shops
   //
 
-  // Currently all shops are the same...
+  TYPE shop_alcohol
+    = NODE AREA ("shop"=="alcohol")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_bakery
+    = NODE AREA ("shop"=="bakery")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_beauty
+    = NODE AREA ("shop"=="beauty")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_beverages
+    = NODE AREA ("shop"=="beverages")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_bicycle
+    = NODE AREA ("shop"=="bicycle")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_books
+    = NODE AREA ("shop"=="books")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_boutique
+    = NODE AREA ("shop"=="boutique")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_butcher
+    = NODE AREA ("shop"=="butcher")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_car
+    = NODE AREA ("shop"=="car")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_car_parts
+    = NODE AREA ("shop"=="car_parts")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_car_repair
+    = NODE AREA ("shop"=="car_repair")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_chemist
+    = NODE AREA ("shop"=="chemist")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_clothes
+    = NODE AREA ("shop"=="clothes")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_computer
+    = NODE AREA ("shop"=="computer")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_confectionery
+    = NODE AREA ("shop"=="confectionery")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_convenience
+    = NODE AREA ("shop"=="convenience")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_copyshop
+    = NODE AREA ("shop"=="copyshop")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_cosmetics
+    = NODE AREA ("shop"=="cosmetics")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_deli
+    = NODE AREA ("shop"=="deli")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_department_store
+    = NODE AREA ("shop"=="department_store")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_doityourself
+    = NODE AREA ("shop"=="doityourself")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_dry_cleaning
+    = NODE AREA ("shop"=="dry_cleaning")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_electronics
+    = NODE AREA ("shop"=="electronics")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_florist
+    = NODE AREA ("shop"=="florist")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_funeral_directors
+    = NODE AREA ("shop"=="funeral_directors")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_furniture
+    = NODE AREA ("shop"=="furniture")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_garden_centre
+    = NODE AREA ("shop"=="garden_centre")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_gift
+    = NODE AREA ("shop"=="gift")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_greengrocer
+    = NODE AREA ("shop"=="greengrocer")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_hairdresser
+    = NODE AREA ("shop"=="hairdresser")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_hardware
+    = NODE AREA ("shop"=="hardware")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_jewelry
+    = NODE AREA ("shop"=="jewelry")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_kiosk
+    = NODE AREA ("shop"=="kiosk")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_laundry
+    = NODE AREA ("shop"=="laundry")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_mall
+    = NODE AREA ("shop"=="mall")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_mobile_phone
+    = NODE AREA ("shop"=="mobile_phone")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_motorcycle
+    = NODE AREA ("shop"=="motorcycle")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_newsagent
+    = NODE AREA ("shop"=="newsagent")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_optician
+    = NODE AREA ("shop"=="optician")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_pet
+    = NODE AREA ("shop"=="pet")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_shoes
+    = NODE AREA ("shop"=="shoes")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_sports
+    = NODE AREA ("shop"=="sports")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_stationery
+    = NODE AREA ("shop"=="stationery")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_supermarket
+    = NODE AREA ("shop"=="supermarket")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_toys
+    = NODE AREA ("shop"=="toys")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_travel_agency
+    = NODE AREA ("shop"=="travel_agency")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_tyres
+    = NODE AREA ("shop"=="tyres")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_vacant
+    = NODE AREA ("shop"=="vacant")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_variety_store
+    = NODE AREA ("shop"=="variety_store")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  // Catch the rest of the shops
   TYPE shop
     = NODE AREA (EXISTS "shop")
       {Name, NameAlt}
