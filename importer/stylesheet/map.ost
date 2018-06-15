@@ -216,7 +216,7 @@ TYPES
       DESC
         en: "motorway"
         de: "Autobahn"
-        
+
   TYPE highway_motorway_trunk
     = WAY ("highway"=="trunk" AND EXISTS "motorroad" AND !("motorroad" IN ["no","false","0"]))
       {Name, NameAlt, Ref, Destination}
@@ -224,12 +224,12 @@ TYPES
       DESC
         en: "trunk"
         de: "Schnellstraﬂe"
-        
+
   TYPE highway_motorway_primary
     = WAY ("highway"=="primary" AND EXISTS "motorroad" AND !("motorroad" IN ["no","false","0"]))
       {Name, NameAlt, Ref, Destination}
       PATH[CAR] LOCATION OPTIMIZE_LOW_ZOOM PIN_WAY
-      
+
   TYPE highway_motorway_link
     = WAY ("highway"=="motorway_link")
       {Name, NameAlt, Ref, Destination}
@@ -951,12 +951,6 @@ TYPES
   // Leisure
   //
 
-  TYPE leisure_building
-    = AREA (EXISTS "leisure" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-     POI
-     MERGE_AREAS
-
   TYPE leisure_playground
     = NODE AREA ("leisure"=="playground")
       {Name, NameAlt}
@@ -1040,11 +1034,27 @@ TYPES
       {Name, NameAlt}
       OPTIMIZE_LOW_ZOOM
 
+
+  //
+  // Aerial way
+  //
+
+  TYPE aerialway_cable_car
+    = NODE AREA ("aerialway"=="cable_car")
+      {Name, NameAlt}
+      POI
+      GROUP amenity
+
   //
   // Amenity
   //
 
-  // These are currently special-cased in the style file
+  TYPE amenity_arts_centre
+    = NODE AREA ("amenity"=="arts_centre")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_atm
     = NODE AREA ("amenity"=="atm")
       {Name, NameAlt}
@@ -1057,11 +1067,29 @@ TYPES
       ADDRESS POI
       GROUP amenity
 
+  TYPE amenity_bar
+    = NODE AREA ("amenity"=="bar")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_bicycle_parking
     = NODE WAY AREA ("amenity"=="bicycle_parking")
       {Name, NameAlt, Width}
       POI
       GROUP amenity, building
+
+  TYPE amenity_bicycle_rental
+    = NODE AREA ("amenity"=="bicycle_rental")
+      {Name, NameAlt}
+      POI
+      GROUP amenity
+
+  TYPE amenity_biergarten
+    = NODE AREA ("amenity"=="biergarten")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
 
   TYPE amenity_bench
     IGNORE // Too many for mobile?
@@ -1071,6 +1099,12 @@ TYPES
   TYPE amenity_brothel
     IGNORE // Too many for mobile?
     = NODE AREA ("amenity"=="brothel")
+      GROUP amenity
+
+  TYPE amenity_bureau_de_change
+    = NODE AREA ("amenity"=="bureau_de_change")
+      {Name, NameAlt}
+      ADDRESS POI
       GROUP amenity
 
   TYPE amenity_bus_station
@@ -1084,8 +1118,32 @@ TYPES
       ADDRESS POI
       GROUP amenity
 
+  TYPE amenity_car_rental
+    = NODE AREA ("amenity"=="car_rental")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_car_wash
+    = NODE AREA ("amenity"=="car_wash")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_charging_station
     = NODE ("amenity"=="charging_station")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_cinema
+    = NODE AREA ("amenity"=="cinema")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_clinic
+    = NODE AREA ("amenity"=="clinic")
       {Name, NameAlt}
       ADDRESS POI
       GROUP amenity
@@ -1095,11 +1153,47 @@ TYPES
     = NODE ("amenity"=="clock")
       GROUP amenity
 
+  TYPE amenity_college
+    = NODE AREA ("amenity"=="college")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_community_centre
+    = NODE AREA ("amenity"=="community_centre")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_courthouse
+    = NODE AREA ("amenity"=="courthouse")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_crematorium
+    = NODE AREA ("amenity"=="crematorium")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_dentist
+    = NODE AREA ("amenity"=="dentist")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_doctors
+    = NODE AREA ("amenity"=="doctors")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_drinking_water
     IGNORE // No visualisation yet
     = NODE ("amenity"=="drinking_water")
       GROUP amenity
-      
+
   TYPE amenity_embassy
     = NODE AREA ("amenity"=="embassy")
       {Name, NameAlt}
@@ -1113,6 +1207,12 @@ TYPES
 
   TYPE amenity_fast_food
     = NODE AREA ("amenity"=="fast_food")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_fire_station
+    = NODE AREA ("amenity"=="fire_station")
       {Name, NameAlt}
       ADDRESS POI
       GROUP amenity
@@ -1140,6 +1240,12 @@ TYPES
       ADDRESS POI
       GROUP amenity
 
+  TYPE amenity_ice_cream
+    = NODE AREA ("amenity"=="ice_cream")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_kindergarten
     = NODE AREA ("amenity"=="kindergarten")
       {Name, NameAlt}
@@ -1152,11 +1258,17 @@ TYPES
       ADDRESS POI
       GROUP amenity
 
-  TYPE amenity_parking_building
-    = AREA ("amenity"=="parking" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE amenity_motorcycle_parking
+    = NODE AREA ("amenity"=="motorcycle_parking")
       {Name, NameAlt}
       ADDRESS POI
-      GROUP amenity, building
+      GROUP amenity
+
+  TYPE amenity_nursing_home
+    = NODE AREA ("amenity"=="nursing_home")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
 
   TYPE amenity_parking_entrance
     IGNORE // No visualisation yet
@@ -1185,6 +1297,18 @@ TYPES
     = NODE ("amenity"=="photo_booth")
       GROUP amenity
 
+  TYPE amenity_place_of_worship
+    = NODE AREA ("amenity"=="place_of_worship")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_prison
+    = NODE AREA ("amenity"=="prison")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_police
     = NODE AREA ("amenity"=="police")
       {Name, NameAlt}
@@ -1201,6 +1325,12 @@ TYPES
     = NODE ("amenity"=="post_box")
       GROUP amenity
 
+  TYPE amenity_pub
+    = NODE AREA ("amenity"=="pub")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_restaurant
     = NODE AREA ("amenity"=="restaurant")
       {Name, NameAlt}
@@ -1209,6 +1339,12 @@ TYPES
 
   TYPE amenity_recycling // there are a number of sub types, not yet defined here...
     = NODE AREA ("amenity"=="recycling")
+      GROUP amenity
+
+  TYPE amenity_sauna
+    = NODE AREA ("amenity"=="sauna")
+      {Name, NameAlt}
+      ADDRESS POI
       GROUP amenity
 
   TYPE amenity_school
@@ -1221,8 +1357,26 @@ TYPES
     = NODE AREA ("amenity"=="taxi")
       GROUP amenity
 
+  TYPE amenity_theatre
+    = NODE AREA ("amenity"=="theatre")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_toilets
     = NODE ("amenity"=="toilets")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_townhall
+    = NODE AREA ("amenity"=="townhall")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_university
+    = NODE AREA ("amenity"=="university")
       {Name, NameAlt}
       ADDRESS POI
       GROUP amenity
@@ -1258,18 +1412,6 @@ TYPES
       {Name, NameAlt}
       POI
       GROUP amenity
-
-  // Churches
-  TYPE christian_church
-    = NODE AREA ("amenity"=="place_of_worship" AND
-            "religion"=="christian")
-      {Name, NameAlt}
-      ADDRESS POI
-
-  TYPE church
-    = NODE AREA ("amenity"=="place_of_worship")
-      {Name, NameAlt}
-      ADDRESS POI
 
   // Everything else is just an 'amenity' for now
   TYPE amenity
@@ -1588,6 +1730,12 @@ TYPES
 
   TYPE shop_variety_store
     = NODE AREA ("shop"=="variety_store")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_wine
+    = NODE AREA ("shop"=="wine")
       {Name, NameAlt}
       ADDRESS POI
       GROUP shop
@@ -2099,7 +2247,7 @@ TYPES
   TYPE place_peninsula IGNORE
     = NODE AREA ("place"=="peninsula")
       {Name, NameAlt}
-      
+
   TYPE place_country
     = NODE ("place"=="country")
       {Name, NameAlt, IsIn}
