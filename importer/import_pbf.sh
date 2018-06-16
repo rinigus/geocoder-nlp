@@ -37,6 +37,7 @@ export LD_LIBRARY_PATH="$PROGPATH"/libosmscout/install/lib:$LD_LIBRARY_PATH
 for module in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 17 22; do
     "$PROGPATH"/libosmscout/install/bin/Import --altLangOrder en -s $module -e $module --typefile "$PROGPATH"/stylesheet/map.ost --destinationDirectory "$D"/tmp "$1" 
 done
+#"$PROGPATH"/libosmscout/install/bin/Import --altLangOrder en --typefile "$PROGPATH"/stylesheet/map.ost --destinationDirectory "$D"/tmp "$1"
 
 if [ "$#" -eq 3 ]; then
     "$PROGPATH"/importer "$D"/tmp "$D" "$PROGPATH"/stylesheet/whitelist "$POSTAL"

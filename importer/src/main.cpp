@@ -124,7 +124,7 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
 
       if (database->GetNodeByOffset(object.GetFileOffset(),
                                     node)) {
-        type+=node->GetType()->GetName();
+        type=node->GetType()->GetName();
         coordinates = node->GetCoords();
       }
     }
@@ -133,7 +133,7 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
 
     if (database->GetAreaByOffset(object.GetFileOffset(),
                                   area)) {
-      type+=area->GetType()->GetName();
+      type=area->GetType()->GetName();
       area->GetCenter(coordinates);
     }
   }
@@ -142,7 +142,7 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
 
     if (database->GetWayByOffset(object.GetFileOffset(),
                                  way)) {
-      type+=way->GetType()->GetName();
+      type=way->GetType()->GetName();
       coordinates = way->GetCoord(way->nodes.size()/2);
     }
   }
@@ -167,27 +167,6 @@ void GetNames(const osmscout::FeatureValueBuffer &features, std::string &name, s
   osmscout::NameAltFeatureValue *nameAltValue=nameAltReader->GetValue(features);
   if (nameAltValue != NULL)
     name_en = nameAltValue->GetNameAlt();
-
-  // for (auto featureInstance :features.GetType()->GetFeatures())
-  //   {
-  //     if (features.HasFeature(featureInstance.GetIndex()))
-  //       {
-  //         osmscout::FeatureRef feature=featureInstance.GetFeature();
-  //         std::string fname = feature->GetName();
-
-  //         if (fname == "NameAlt" && feature->HasValue())
-  //           {
-  //             osmscout::FeatureValue *value=features.GetValue(featureInstance.GetIndex());
-  //             if (feature->HasLabel())
-  //               {
-  //                 name_en = value->GetLabel();
-  //                 return name_en;
-  //               }
-  //           }
-  //       }
-  //   }
-
-  // return name_en;
 }
 
 void GetObjectNames( const osmscout::DatabaseRef& database,
@@ -491,20 +470,18 @@ public:
 
     for (auto alias: region.aliases)
       {
-        if ( alias.name.length() < 1 ||
-             find(saved_names.begin(),
-                  saved_names.end(),
-                  alias.name) == saved_names.end() )
-          continue; // skip since we saved it already
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
 
-        saved_names.push_back(alias.name);
-
-        // no name_en here
-
-        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
+        osmscout::ObjectFileRef object(alias.objectOffset, osmscout::refNode);
+        GetObjectTypeCoor(m_database, object, type, coordinates);
         id = IDs.next();
+
+        GetObjectNames(m_database, object, name, name_en);
+
         cmd.binder() << id
                      << alias.name
+                     << name
+                     << name_en
                      << IDs.get_id(region.parentRegionOffset)
                      << coordinates.GetLon()
                      << coordinates.GetLat();
