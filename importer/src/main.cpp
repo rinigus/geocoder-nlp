@@ -482,14 +482,14 @@ public:
                      << alias.name
                      << name
                      << name_en
-                     << IDs.get_id(region.parentRegionOffset)
+                     << regionID
                      << coordinates.GetLon()
                      << coordinates.GetLat();
         if (cmd.execute() != SQLITE_OK)
           std::cerr << "Error inserting region alias 2 " << alias.name << "\n";
 
         write_type(m_db, id, type);
-        IDs.set_parent(id, region.parentRegionOffset);
+        IDs.set_parent(id, regionID);
       }
 
     LocVisitor loc(m_database, m_db, regionID);
