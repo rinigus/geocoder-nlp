@@ -1,4 +1,3 @@
-
 OST
 
 /*
@@ -217,7 +216,7 @@ TYPES
       DESC
         en: "motorway"
         de: "Autobahn"
-        
+
   TYPE highway_motorway_trunk
     = WAY ("highway"=="trunk" AND EXISTS "motorroad" AND !("motorroad" IN ["no","false","0"]))
       {Name, NameAlt, Ref, Destination}
@@ -225,12 +224,12 @@ TYPES
       DESC
         en: "trunk"
         de: "Schnellstraﬂe"
-        
+
   TYPE highway_motorway_primary
     = WAY ("highway"=="primary" AND EXISTS "motorroad" AND !("motorroad" IN ["no","false","0"]))
       {Name, NameAlt, Ref, Destination}
       PATH[CAR] LOCATION OPTIMIZE_LOW_ZOOM PIN_WAY
-      
+
   TYPE highway_motorway_link
     = WAY ("highway"=="motorway_link")
       {Name, NameAlt, Ref, Destination}
@@ -952,11 +951,10 @@ TYPES
   // Leisure
   //
 
-  TYPE leisure_building
-    = AREA (EXISTS "leisure" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE leisure_playground
+    = NODE AREA ("leisure"=="playground")
       {Name, NameAlt}
-     POI
-     MERGE_AREAS
+      ADDRESS POI
 
   TYPE leisure_sports_centre
     = NODE AREA ("leisure"=="sports_centre")
@@ -1036,22 +1034,32 @@ TYPES
       {Name, NameAlt}
       OPTIMIZE_LOW_ZOOM
 
+
+  //
+  // Aerial way
+  //
+
+  TYPE aerialway_cable_car
+    = NODE AREA ("aerialway"=="cable_car")
+      {Name, NameAlt}
+      POI
+      GROUP amenity
+
   //
   // Amenity
   //
 
-  // These are currently special-cased in the style file
+  TYPE amenity_arts_centre
+    = NODE AREA ("amenity"=="arts_centre")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_atm
     = NODE AREA ("amenity"=="atm")
       {Name, NameAlt}
       POI
       GROUP amenity
-
-  TYPE amenity_bank_building
-    = AREA ("amenity"=="bank" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      POI
-      GROUP amenity, building
 
   TYPE amenity_bank
     = NODE AREA ("amenity"=="bank")
@@ -1059,15 +1067,29 @@ TYPES
       ADDRESS POI
       GROUP amenity
 
-  TYPE amenity_bicycle_parking_building
-    = AREA ("amenity"=="bicycle_parking" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE amenity_bar
+    = NODE AREA ("amenity"=="bar")
       {Name, NameAlt}
-      GROUP amenity, building
+      ADDRESS POI
+      GROUP amenity
 
   TYPE amenity_bicycle_parking
     = NODE WAY AREA ("amenity"=="bicycle_parking")
       {Name, NameAlt, Width}
+      POI
       GROUP amenity, building
+
+  TYPE amenity_bicycle_rental
+    = NODE AREA ("amenity"=="bicycle_rental")
+      {Name, NameAlt}
+      POI
+      GROUP amenity
+
+  TYPE amenity_biergarten
+    = NODE AREA ("amenity"=="biergarten")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
 
   TYPE amenity_bench
     IGNORE // Too many for mobile?
@@ -1079,16 +1101,16 @@ TYPES
     = NODE AREA ("amenity"=="brothel")
       GROUP amenity
 
+  TYPE amenity_bureau_de_change
+    = NODE AREA ("amenity"=="bureau_de_change")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_bus_station
     = NODE AREA ("amenity"=="bus_station")
       {Name, NameAlt}
       GROUP amenity
-
-  TYPE amenity_cafe_building
-    = AREA ("amenity"=="cafe" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP amenity, building
 
   TYPE amenity_cafe
     = NODE AREA ("amenity"=="cafe")
@@ -1096,9 +1118,34 @@ TYPES
       ADDRESS POI
       GROUP amenity
 
+  TYPE amenity_car_rental
+    = NODE AREA ("amenity"=="car_rental")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_car_wash
+    = NODE AREA ("amenity"=="car_wash")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_charging_station
-    IGNORE // No visualisation yet
     = NODE ("amenity"=="charging_station")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_cinema
+    = NODE AREA ("amenity"=="cinema")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_clinic
+    = NODE AREA ("amenity"=="clinic")
+      {Name, NameAlt}
+      ADDRESS POI
       GROUP amenity
 
   TYPE amenity_clock
@@ -1106,9 +1153,51 @@ TYPES
     = NODE ("amenity"=="clock")
       GROUP amenity
 
+  TYPE amenity_college
+    = NODE AREA ("amenity"=="college")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_community_centre
+    = NODE AREA ("amenity"=="community_centre")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_courthouse
+    = NODE AREA ("amenity"=="courthouse")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_crematorium
+    = NODE AREA ("amenity"=="crematorium")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_dentist
+    = NODE AREA ("amenity"=="dentist")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_doctors
+    = NODE AREA ("amenity"=="doctors")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_drinking_water
     IGNORE // No visualisation yet
     = NODE ("amenity"=="drinking_water")
+      GROUP amenity
+
+  TYPE amenity_embassy
+    = NODE AREA ("amenity"=="embassy")
+      {Name, NameAlt}
+      ADDRESS POI
       GROUP amenity
 
   TYPE amenity_ev_charging
@@ -1116,26 +1205,20 @@ TYPES
     = NODE ("amenity"=="ev_charging")
       GROUP amenity
 
-  TYPE amenity_fast_food_building
-    = AREA ("amenity"=="fast_food" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP amenity, building
-
   TYPE amenity_fast_food
     = NODE AREA ("amenity"=="fast_food")
       {Name, NameAlt}
       ADDRESS POI
       GROUP amenity
 
-  TYPE amenity_fuel_building
-    = AREA ("amenity"=="fuel" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE amenity_fire_station
+    = NODE AREA ("amenity"=="fire_station")
       {Name, NameAlt}
       ADDRESS POI
-      GROUP amenity, building
+      GROUP amenity
 
   TYPE amenity_fuel
-    = NODE ("amenity"=="fuel")
+    = NODE AREA ("amenity"=="fuel")
       {Name, NameAlt}
       ADDRESS POI
       GROUP amenity
@@ -1151,35 +1234,41 @@ TYPES
     = NODE ("amenity"=="grit_bin")
       GROUP amenity
 
-  TYPE amenity_hospital_building
-    = AREA ("amenity"=="hospital" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP amenity, building
-
   TYPE amenity_hospital
     = NODE AREA ("amenity"=="hospital")
       {Name, NameAlt}
       ADDRESS POI
       GROUP amenity
 
-  TYPE amenity_kindergarten_building
-    = AREA ("amenity"=="kindergarten" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP amenity, building
-
-  TYPE amenity_kindergarten
-    = NODE ("amenity"=="kindergarten")
+  TYPE amenity_ice_cream
+    = NODE AREA ("amenity"=="ice_cream")
       {Name, NameAlt}
       ADDRESS POI
       GROUP amenity
 
-  TYPE amenity_parking_building
-    = AREA ("amenity"=="parking" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE amenity_kindergarten
+    = NODE AREA ("amenity"=="kindergarten")
       {Name, NameAlt}
       ADDRESS POI
-      GROUP amenity, building
+      GROUP amenity
+
+  TYPE amenity_library
+    = NODE AREA ("amenity"=="library")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_motorcycle_parking
+    = NODE AREA ("amenity"=="motorcycle_parking")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_nursing_home
+    = NODE AREA ("amenity"=="nursing_home")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
 
   TYPE amenity_parking_entrance
     IGNORE // No visualisation yet
@@ -1208,11 +1297,23 @@ TYPES
     = NODE ("amenity"=="photo_booth")
       GROUP amenity
 
-  TYPE amenity_post_office_building
-    = AREA ("amenity"=="post_office" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE amenity_place_of_worship
+    = NODE AREA ("amenity"=="place_of_worship")
       {Name, NameAlt}
       ADDRESS POI
-      GROUP amenity, building
+      GROUP amenity
+
+  TYPE amenity_prison
+    = NODE AREA ("amenity"=="prison")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_police
+    = NODE AREA ("amenity"=="police")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
 
   TYPE amenity_post_office
     = NODE ("amenity"=="post_office")
@@ -1224,11 +1325,11 @@ TYPES
     = NODE ("amenity"=="post_box")
       GROUP amenity
 
-  TYPE amenity_restaurant_building
-    = AREA ("amenity"=="restaurant" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE amenity_pub
+    = NODE AREA ("amenity"=="pub")
       {Name, NameAlt}
       ADDRESS POI
-      GROUP amenity, building
+      GROUP amenity
 
   TYPE amenity_restaurant
     = NODE AREA ("amenity"=="restaurant")
@@ -1240,11 +1341,11 @@ TYPES
     = NODE AREA ("amenity"=="recycling")
       GROUP amenity
 
-  TYPE amenity_school_building
-    = AREA ("amenity"=="school" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
+  TYPE amenity_sauna
+    = NODE AREA ("amenity"=="sauna")
       {Name, NameAlt}
       ADDRESS POI
-      GROUP amenity, building
+      GROUP amenity
 
   TYPE amenity_school
     = NODE AREA ("amenity"=="school")
@@ -1256,8 +1357,28 @@ TYPES
     = NODE AREA ("amenity"=="taxi")
       GROUP amenity
 
+  TYPE amenity_theatre
+    = NODE AREA ("amenity"=="theatre")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
   TYPE amenity_toilets
     = NODE ("amenity"=="toilets")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_townhall
+    = NODE AREA ("amenity"=="townhall")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP amenity
+
+  TYPE amenity_university
+    = NODE AREA ("amenity"=="university")
+      {Name, NameAlt}
+      ADDRESS POI
       GROUP amenity
 
   TYPE amenity_vending_machine
@@ -1292,38 +1413,334 @@ TYPES
       POI
       GROUP amenity
 
-  // Churches
-  TYPE christian_church_building
-    = AREA ("amenity"=="place_of_worship" AND
-            "religion"=="christian" AND
-            EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-
-  TYPE christian_church
-    = NODE ("amenity"=="place_of_worship" AND
-            "religion"=="christian")
-      {Name, NameAlt}
-      ADDRESS POI
-
   // Everything else is just an 'amenity' for now
-  TYPE amenity_building
-    = AREA (EXISTS "amenity" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP amenity, building
-
   TYPE amenity
-    = NODE (EXISTS "amenity")
+    = NODE AREA (EXISTS "amenity")
       {Name, NameAlt}
       ADDRESS
       GROUP amenity
 
   //
+  // Emergencies
+  //
+
+  TYPE emergency_defibrillator
+    = NODE AREA ("emergency"=="defibrillator")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP emergency
+
+  TYPE emergency_phone
+    = NODE AREA ("emergency"=="phone")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP emergency
+
+  //
   // Shops
   //
 
-  // Currently all shops are the same...
+  TYPE shop_alcohol
+    = NODE AREA ("shop"=="alcohol")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_bakery
+    = NODE AREA ("shop"=="bakery")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_beauty
+    = NODE AREA ("shop"=="beauty")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_beverages
+    = NODE AREA ("shop"=="beverages")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_bicycle
+    = NODE AREA ("shop"=="bicycle")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_books
+    = NODE AREA ("shop"=="books")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_boutique
+    = NODE AREA ("shop"=="boutique")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_butcher
+    = NODE AREA ("shop"=="butcher")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_car
+    = NODE AREA ("shop"=="car")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_car_parts
+    = NODE AREA ("shop"=="car_parts")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_car_repair
+    = NODE AREA ("shop"=="car_repair")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_chemist
+    = NODE AREA ("shop"=="chemist")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_clothes
+    = NODE AREA ("shop"=="clothes")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_computer
+    = NODE AREA ("shop"=="computer")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_confectionery
+    = NODE AREA ("shop"=="confectionery")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_convenience
+    = NODE AREA ("shop"=="convenience")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_copyshop
+    = NODE AREA ("shop"=="copyshop")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_cosmetics
+    = NODE AREA ("shop"=="cosmetics")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_deli
+    = NODE AREA ("shop"=="deli")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_department_store
+    = NODE AREA ("shop"=="department_store")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_doityourself
+    = NODE AREA ("shop"=="doityourself")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_dry_cleaning
+    = NODE AREA ("shop"=="dry_cleaning")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_electronics
+    = NODE AREA ("shop"=="electronics")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_florist
+    = NODE AREA ("shop"=="florist")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_funeral_directors
+    = NODE AREA ("shop"=="funeral_directors")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_furniture
+    = NODE AREA ("shop"=="furniture")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_garden_centre
+    = NODE AREA ("shop"=="garden_centre")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_gift
+    = NODE AREA ("shop"=="gift")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_greengrocer
+    = NODE AREA ("shop"=="greengrocer")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_hairdresser
+    = NODE AREA ("shop"=="hairdresser")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_hardware
+    = NODE AREA ("shop"=="hardware")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_jewelry
+    = NODE AREA ("shop"=="jewelry")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_kiosk
+    = NODE AREA ("shop"=="kiosk")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_laundry
+    = NODE AREA ("shop"=="laundry")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_mall
+    = NODE AREA ("shop"=="mall")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_mobile_phone
+    = NODE AREA ("shop"=="mobile_phone")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_motorcycle
+    = NODE AREA ("shop"=="motorcycle")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_newsagent
+    = NODE AREA ("shop"=="newsagent")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_optician
+    = NODE AREA ("shop"=="optician")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_pet
+    = NODE AREA ("shop"=="pet")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_shoes
+    = NODE AREA ("shop"=="shoes")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_sports
+    = NODE AREA ("shop"=="sports")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_stationery
+    = NODE AREA ("shop"=="stationery")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_supermarket
+    = NODE AREA ("shop"=="supermarket")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_toys
+    = NODE AREA ("shop"=="toys")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_travel_agency
+    = NODE AREA ("shop"=="travel_agency")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_tyres
+    = NODE AREA ("shop"=="tyres")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_vacant
+    = NODE AREA ("shop"=="vacant")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_variety_store
+    = NODE AREA ("shop"=="variety_store")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  TYPE shop_wine
+    = NODE AREA ("shop"=="wine")
+      {Name, NameAlt}
+      ADDRESS POI
+      GROUP shop
+
+  // Catch the rest of the shops
   TYPE shop
     = NODE AREA (EXISTS "shop")
       {Name, NameAlt}
@@ -1338,12 +1755,6 @@ TYPES
       {Name, NameAlt}
       ADDRESS POI
       GROUP tourism
-
-  TYPE tourism_attraction_building
-    = NODE AREA ("tourism"=="attraction" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
 
   TYPE tourism_attraction
     = NODE AREA ("tourism"=="attraction")
@@ -1392,23 +1803,11 @@ TYPES
       ADDRESS POI
       GROUP tourism
 
-  TYPE tourism_alpine_hut_building
-    = AREA ("tourism"=="alpine_hut" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS
-      GROUP tourism, building
-
   TYPE tourism_alpine_hut
     = NODE AREA ("tourism"=="alpine_hut")
       {Name, NameAlt}
       ADDRESS
       GROUP tourism
-
-  TYPE tourism_chalet_building
-    = AREA ("tourism"=="chalet" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
 
   TYPE tourism_chalet
     = NODE AREA ("tourism"=="chalet")
@@ -1416,23 +1815,11 @@ TYPES
       ADDRESS POI
       GROUP tourism
 
-  TYPE tourism_guest_house_building
-    = AREA ("tourism"=="guest_house" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
-
   TYPE tourism_guest_house
     = NODE AREA ("tourism"=="guest_house")
       {Name, NameAlt}
       ADDRESS POI
       GROUP tourism
-
-  TYPE tourism_hostel_building
-    = AREA ("tourism"=="hostel" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
 
   TYPE tourism_hostel
     = NODE AREA ("tourism"=="hostel")
@@ -1440,23 +1827,11 @@ TYPES
       ADDRESS POI
       GROUP tourism
 
-  TYPE tourism_hotel_building
-    = AREA ("tourism"=="hotel" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
-
   TYPE tourism_hotel
     = NODE AREA ("tourism"=="hotel")
       {Name, NameAlt}
       ADDRESS POI
       GROUP tourism
-
-  TYPE tourism_information_building
-    = AREA ("tourism"=="information" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
 
   TYPE tourism_information
     = NODE AREA ("tourism"=="information")
@@ -1464,35 +1839,17 @@ TYPES
       ADDRESS POI
       GROUP tourism
 
-  TYPE tourism_motel_building
-    = AREA ("tourism"=="motel" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
-
   TYPE tourism_motel
     = NODE AREA ("tourism"=="motel")
       {Name, NameAlt}
       ADDRESS POI
       GROUP tourism
 
-  TYPE tourism_museum_building
-    = AREA ("tourism"=="museum" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
-
   TYPE tourism_museum
     = NODE AREA ("tourism"=="museum")
       {Name, NameAlt}
       ADDRESS POI
       GROUP tourism
-
-  TYPE tourism_building
-    = AREA (EXISTS "tourism" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP tourism, building
 
   TYPE tourism
     = NODE AREA (EXISTS "tourism")
@@ -1504,35 +1861,17 @@ TYPES
   // Historic
   //
 
-  TYPE historic_castle_building
-    = AREA ("historic"=="castle" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP historic, building
-
   TYPE historic_castle
     = NODE AREA ("historic"=="castle")
       {Name, NameAlt}
       ADDRESS POI
       GROUP historic
 
-  TYPE historic_manor_building
-    = AREA ("historic"=="manor" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP historic, building
-
   TYPE historic_manor
     = NODE AREA ("historic"=="manor")
       {Name, NameAlt}
       ADDRESS POI
       GROUP historic
-
-  TYPE historic_monument_building
-    = AREA ("historic"=="monument" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP historic, building
 
   TYPE historic_monument
     = NODE AREA ("historic"=="monument")
@@ -1546,23 +1885,11 @@ TYPES
       {Name, NameAlt}
       GROUP historic
 
-  TYPE historic_memorial_building
-    = AREA ("historic"=="memorial" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP historic, building
-
   TYPE historic_memorial
     = NODE AREA ("historic"=="memorial")
       {Name, NameAlt}
       ADDRESS POI
       GROUP historic
-
-  TYPE historic_ruins_building
-    = AREA ("historic"=="ruins" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP historic, building
 
   TYPE historic_ruins
     = NODE WAY AREA ("historic"=="ruins")
@@ -1588,12 +1915,6 @@ TYPES
       ADDRESS POI
       GROUP historic
 
-  TYPE historic_building
-    = AREA (EXISTS "historic" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
-      {Name, NameAlt}
-      ADDRESS POI
-      GROUP historic, building
-
   TYPE historic
     = NODE AREA (EXISTS "historic")
       {Name, NameAlt}
@@ -1606,11 +1927,6 @@ TYPES
 
   TYPE military_airfield
     = NODE AREA ("military"=="airfield")
-      {Name, NameAlt}
-      ADDRESS
-
-  TYPE military_bunker_building
-    = NODE AREA ("military"=="bunker" AND EXISTS "building" AND !("building" IN ["no","false","0"]))
       {Name, NameAlt}
       ADDRESS
 
@@ -1931,7 +2247,7 @@ TYPES
   TYPE place_peninsula IGNORE
     = NODE AREA ("place"=="peninsula")
       {Name, NameAlt}
-      
+
   TYPE place_country
     = NODE ("place"=="country")
       {Name, NameAlt, IsIn}

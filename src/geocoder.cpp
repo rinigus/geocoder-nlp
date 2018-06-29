@@ -13,6 +13,7 @@ const size_t GeoNLP::Geocoder::num_languages{2}; // 1 (default) + 1 (english)
 
 Geocoder::Geocoder()
 {
+  update_limits();
 }
 
 std::string Geocoder::name_primary(const std::string &dname)
@@ -140,6 +141,11 @@ bool Geocoder::check_version(const std::string &supported)
   return false;
 }
 
+void Geocoder::update_limits()
+{
+  m_max_inter_results = m_max_results + m_max_inter_offset;
+}
+
 #ifdef GEONLP_PRINT_DEBUG
 static std::string v2s(const std::vector<std::string> &v)
 {
@@ -158,10 +164,11 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
 {
   if (!m_database_open)
     return false;
-  
+
   // parse query by libpostal
   std::vector< Postal::Hierarchy > parsed_result;
   Postal::result2hierarchy(parsed_query, parsed_result);
+
 
   result.clear();
   m_levels_resolved = min_levels;
@@ -177,15 +184,15 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
     for (const auto &r: parsed_result)
       {
 #ifdef GEONLP_PRINT_DEBUG
-	for (auto a: r)
-	  std::cout << v2s(a) << " / ";
-	std::cout << "\n";
+        for (auto a: r)
+          std::cout << v2s(a) << " / ";
+        std::cout << "\n";
 #endif
 
-	m_query_count = 0;
-	if ( r.size() >= m_levels_resolved ||
-	     (r.size() == m_levels_resolved && result.size() < m_max_results) )
-	  search(r, result);
+        m_query_count = 0;
+        if ( r.size() >= m_levels_resolved ||
+             (r.size() == m_levels_resolved && result.size() < m_max_inter_results) )
+          search(r, result);
 #ifdef GEONLP_PRINT_DEBUG_QUERIES
         else
           std::cout << "Skipping hierarchy since search result already has more levels than provided\n";
@@ -202,7 +209,7 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
     // fill the data
     for (GeoResult &r: result)
       {
-        get_name(r.id, r.title, r.address, m_levels_in_title);
+        get_name(r.id, r.title, r.address, r.admin_levels, m_levels_in_title);
         r.type = get_type(r.id);
 
         sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
@@ -220,7 +227,11 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
     std::cerr << "Geocoder exception: " << e.what() << std::endl;
     return false;
   }
-  
+
+  // sort and trim results
+  std::sort( result.begin(), result.end() );
+  if ( result.size() >=  m_max_results )
+    result.resize(m_max_results);
 
   return true;
 }
@@ -250,7 +261,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
     bool operator<(const IntermediateResult &A) const
     { return ( txt.length() < A.txt.length() || (txt.length() == A.txt.length() && txt<A.txt) || (txt==A.txt && id<A.id) ); }
   };
-  
+
   std::deque<IntermediateResult> search_result;
   for (const std::string s: parsed[level])
     {
@@ -292,11 +303,11 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
       if (ids_explored.count(id) > 0)
         continue; // has been looked into it already
 
-      if (parsed.size() < m_levels_resolved || (parsed.size()==m_levels_resolved && result.size() >= m_max_results))
+      if (parsed.size() < m_levels_resolved || (parsed.size()==m_levels_resolved && result.size() >= m_max_inter_results))
         break; // this search cannot add more results
-      
+
       ids_explored.insert(id);
-      
+
       // are we interested in this result even if it doesn't have subregions?
       if (!last_level)
         {
@@ -314,10 +325,10 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
           if (m_levels_resolved > level+1 && id >= last_subobject)
             continue; // take the next search_result
         }
-      
+
       if ( last_level ||
            last_subobject <= id ||
-           !search(parsed, result, level+1, id, last_subobject) )
+           !search(parsed, result, level+1, id+1, last_subobject) )
         {
           size_t levels_resolved = level+1;
           if ( m_levels_resolved < levels_resolved )
@@ -326,7 +337,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
               m_levels_resolved = levels_resolved;
             }
 
-          if (m_levels_resolved == levels_resolved && (result.size() < m_max_results))
+          if (m_levels_resolved == levels_resolved && (result.size() < m_max_inter_results))
             {
               bool have_already = false;
               for (const auto &r: result)
@@ -351,7 +362,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
 }
 
 
-void Geocoder::get_name(long long id, std::string &title, std::string &full, int levels_in_title)
+void Geocoder::get_name(long long id, std::string &title, std::string &full, size_t &admin_levels, int levels_in_title)
 {
   long long int parent;
   std::string name;
@@ -365,6 +376,8 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, int
     {
       // only one entry is expected
       v.getter() >> name >> name_extra >> name_en >> parent;
+
+      if (name.empty()) name=" ";
 
       toadd = std::string();
       if (m_preferred_result_language == "en" && !name_en.empty()) toadd = name_en;
@@ -381,7 +394,8 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, int
           title += toadd;
         }
 
-      get_name(parent, title, full, levels_in_title-1);
+      get_name(parent, title, full, admin_levels, levels_in_title-1);
+      admin_levels++;
       return;
     }
 }
@@ -393,7 +407,7 @@ std::string Geocoder::get_type(long long id)
 
   sqlite3pp::query qry(m_db, "SELECT t.name FROM object_primary o JOIN type t ON t.id=o.type_id WHERE o.id=?");
   qry.bind(1, id);
-  
+
   for (auto v: qry)
     {
       std::string n;
@@ -424,7 +438,7 @@ bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value rang
 
   *idx0 = std::lower_bound(v0, v0 + sz, range0);
   if (*idx0 - v0 >= sz) return false;
-  
+
   *idx1 = std::upper_bound(v0, v0 + sz, range1);
   if (*idx1 - v0 >= sz && *(v0) > range1 ) return false;
 
@@ -432,13 +446,14 @@ bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value rang
 }
 
 
-bool Geocoder::search_nearby( const std::vector< std::string > &query,
+bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
+                              const std::vector< std::string > &type_query,
                               double latitude, double longitude,
                               double radius,
                               std::vector<GeoResult> &result,
                               Postal &postal )
 {
-  if ( query.empty() || radius < 0 )
+  if ( (name_query.empty() && type_query.empty()) || radius < 0 )
     return false;
 
   // rough estimates of distance (meters) per degree
@@ -452,6 +467,10 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
                            "JOIN type t ON o.type_id=t.id "
                            "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
                            "WHERE " );
+
+    if (!type_query.empty())
+      for (auto tq: type_query)
+        query_txt += " t.name = '" + tq + "' AND ";
 
     query_txt += "maxLat>=:minLat AND minLat<=:maxLat AND maxLon >= :minLon AND minLon <= :maxLon";
 
@@ -479,31 +498,28 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
             continue; // skip this result
         }
 
-        // check query
-        bool found = false;
-        for ( auto q = query.cbegin(); !found && q != query.cend(); ++q )
-          found = ( type.find(*q) != std::string::npos );
-
-        if (!found)
+        // check name query
+        if (!name_query.empty())
           {
+            bool found = false;
             std::vector<std::string> expanded;
             postal.expand_string( name, expanded );
 
-            for ( auto q = query.cbegin(); !found && q != query.cend(); ++q )
+            for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
               for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
                 // search is for whether the name starts with the query or has
                 // the query after space (think of street Dr. Someone and query Someone)
                 found = ( e->compare(0, q->length(), *q) == 0  ||
                           e->find(" " + *q) != std::string::npos );
-          }
 
-        if (!found)
-          continue; // substring not found
+            if (!found)
+              continue; // substring not found
+          }
 
         GeoResult r;
         r.id = id;
 
-        get_name(r.id, r.title, r.address, m_levels_in_title);
+        get_name(r.id, r.title, r.address, r.admin_levels, m_levels_in_title);
         r.type = get_type(r.id);
 
         r.latitude = lat;
@@ -519,9 +535,9 @@ bool Geocoder::search_nearby( const std::vector< std::string > &query,
     return false;
   }
 
-  if ( m_max_results > 0 && result.size() >=  m_max_results )
+  if ( result.size() >=  m_max_results )
     {
-      std::sort( result.begin(), result.end() );
+      Geocoder::sort_by_distance( result.begin(), result.end() );
       result.resize(m_max_results);
     }
 
