@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import argparse, os, collections
+import argparse, os, collections, sys
 
 parser = argparse.ArgumentParser(description='''
 This script generates a country specific databases for use with
@@ -10,9 +10,6 @@ for every country found in the countries_languages.txt .
 The driver will generate databases only for the countries that are
 missing in the output directory''')
 
-parser.add_argument('geodata_dir', type=str,
-                    help='path to the directory containing geonames.tsv and postal_codes.tsv files')
-
 parser.add_argument('addrdata_dir', type=str,
                     help='path to the directory containing files required for address parser training (formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv)')
 
@@ -20,6 +17,8 @@ parser.add_argument('output_root_dir', type=str,
                     help='path to the directory where country specific subdirectory will be created')
 
 args = parser.parse_args()
+
+script_dir = os.path.dirname(sys.argv[0])
 
 # load list of countries
 countries = []
@@ -49,7 +48,7 @@ print
 
 countries_done = []
 for l in os.listdir(args.output_root_dir):
-    if l != "compressed" and os.path.exists(os.path.join(args.output_root_dir, l, "address_parser", "address_parser.dat")):
+    if l != "compressed" and os.path.exists(os.path.join(args.output_root_dir, l, "address_parser", "address_parser_phrases.dat")):
         countries_done.append( l.lower() )
 countries_done.sort()
 
@@ -81,9 +80,8 @@ f.write("\n\techo All done\n\n")
 for c in countries_todo:
     C = c.upper()
     f.write(os.path.join(args.output_root_dir, C, "address_parser", "address_parser.dat") + ":\n" +
-            '\t./build_country_db.sh "%s" "%s" "%s" %s\n\n' % (args.geodata_dir,
-                                                               args.addrdata_dir,
-                                                               args.output_root_dir,
-                                                               C) )
+            '\t%s/build_country_db.sh "%s" "%s" %s\n\n' % (script_dir, args.addrdata_dir,
+                                                           args.output_root_dir,
+                                                           C) )
 
 print "\nExamine and run " + script + "\n"

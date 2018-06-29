@@ -2,19 +2,16 @@
 
 set -e
 
-if [ $# -ne 4 ]; then
+if [ $# -ne 3 ]; then
     echo "
 This script generates a country specific databases for use with
 libpostal routines.
 
 Usage:
 
-$0 geodata_dir addrdata_dir output_root_dir country_code
+$0 addrdata_dir output_root_dir country_code
 
 where 
-
-geodata_dir: path to the directory containing geonames.tsv
-postal_codes.tsv files
 
 addrdata_dir: path to the directory containing files required for
 address parser training (formatted_addresses_tagged.random.tsv
@@ -48,10 +45,9 @@ POSTAL_SRC_DIR=libpostal/src
 
 #################################################################
 
-GEODATA=$1
-ADDRDATA=$2
-OUTPUT=$3
-COUNTRY=$4
+ADDRDATA=$1
+OUTPUT=$2
+COUNTRY=$3
 
 TMPDATA="$OUTPUT/tmp-$COUNTRY-`cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 8 | head -n 1`"
 
@@ -69,25 +65,12 @@ rm -rf "$COUNTRY_DIR"
 
 mkdir -p "$TMPDATA"
 mkdir -p "$COUNTRY_DIR/address_parser"
-mkdir -p "$COUNTRY_DIR/geodb"
-
-# Geo data
-cup=$(echo $COUNTRY_UPPER | tr "-" "\n")
-for file in geonames.tsv postal_codes.tsv; do
-    cp /dev/null "$TMPDATA/$file"
-    for C in $cup; do 
-	echo "Geo data preparation: $file / $C" 
-	grep $'\t'$C$'\t' "$GEODATA/$file" >> "$TMPDATA/$file" || true
-    done
-done
-
-echo "Geo data ready"
 
 # Addresses
 cp /dev/null "$OUTPUT_ADDRESS"
 clow=$(echo $COUNTRY_LOWER | tr "-" "\n")
 for C in $clow; do 
-    for file in formatted_addresses_tagged.random.tsv openaddresses_formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv; do
+    for file in formatted_addresses_tagged.random.tsv formatted_places_tagged.random.tsv formatted_ways_tagged.random.tsv geoplanet_formatted_addresses_tagged.random.tsv openaddresses_formatted_addresses_tagged.random.tsv uk_openaddresses_formatted_addresses_tagged.random.tsv; do
 	echo "Address data preparation: $file / $C"
 	DSPLIT="$ADDRDATA/$file-split"
 	if [ -d $DSPLIT ]; then
@@ -105,11 +88,27 @@ mv "$OUTPUT_ADDRESS.shuf" "$OUTPUT_ADDRESS"
 
 ########################################################################
 
-echo "Build GEO database"
-build_geodb "$TMPDATA" "$COUNTRY_DIR/geodb"
-
 echo "Address training"
-time address_parser_train "$OUTPUT_ADDRESS" "$COUNTRY_DIR/address_parser"
+tlines=`cat "$OUTPUT_ADDRESS" | wc -l`
+reflines=15000000
+refiters=35
+if (( tlines*5 > reflines )); then
+    iters=5
+    minup=5
+else
+    iters=$((reflines / tlines + 1))
+    minup=3
+    if (( iters > refiters )); then
+        iters=$refiters
+        minup=1
+    fi
+fi
+
+echo 'Number of training lines:' $tlines
+echo 'Iterations:' $iters
+echo 'Minimal updates:' $minup
+
+time address_parser_train --iterations $iters --min-updates $minup "$OUTPUT_ADDRESS" "$COUNTRY_DIR/address_parser"
 
 echo "Removing temporary directory"
 rm -rf "$TMPDATA"
