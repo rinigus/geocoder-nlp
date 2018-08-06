@@ -6,14 +6,14 @@
 #include <iostream>
 #include <algorithm>
 
-#include <boost/geometry.hpp>
+// #include <boost/geometry.hpp>
 
 using namespace GeoNLP;
 
 const int GeoNLP::Geocoder::version{4};
 const size_t GeoNLP::Geocoder::num_languages{2}; // 1 (default) + 1 (english)
 
-typedef boost::geometry::model::point< double, 2, boost::geometry::cs::spherical_equatorial<boost::geometry::degree> > point_t;
+// typedef boost::geometry::model::point< double, 2, boost::geometry::cs::spherical_equatorial<boost::geometry::degree> > point_t;
 
 
 Geocoder::Geocoder()
@@ -570,12 +570,12 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
     return false;
 
   const double earth_radius = 6378137;
+  const double radius2 = radius*radius;
   
-  // fill linestring
-  point_t reference(longitude[0], latitude[0]);
-  boost::geometry::model::linestring<point_t> ls;
-  for (size_t i=0; i < latitude.size(); ++i)
-    boost::geometry::append(ls, point_t(longitude[i],latitude[i]));
+  // // fill linestring
+  // boost::geometry::model::linestring<point_t> ls;
+  // for (size_t i=0; i < latitude.size(); ++i)
+  //   boost::geometry::append(ls, point_t(longitude[i],latitude[i]));
   
   try {
 
@@ -583,6 +583,10 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
     for (size_t LineI = 0; LineI < longitude.size()-1 && (m_max_results < 0 || result.size() <=  m_max_results); ++LineI)
       {
 
+        // rough estimates of distance (meters) per degree
+        const double dist_per_degree_lat = 111e3;
+        const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude[LineI]*M_PI/180.0));
+          
         // step 1: get boxes that are near the line segment
         std::deque<long long> newboxes;
         {
@@ -593,10 +597,6 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
           
           auto bb_lat = std::minmax(latitude[LineI], latitude[LineI+1]);
           auto bb_lon = std::minmax(longitude[LineI], longitude[LineI+1]);
-          
-          // rough estimates of distance (meters) per degree
-          const double dist_per_degree_lat = 111e3;
-          const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude[LineI]*M_PI/180.0));
           
           qry.bind(":minLat", bb_lat.first - radius/dist_per_degree_lat);
           qry.bind(":maxLat", bb_lat.second + radius/dist_per_degree_lat);
@@ -655,9 +655,38 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
               double lat, lon, distance;
               v.getter() >> id >> name >> type >> lat >> lon;
 
-              // check if distance is ok
-              if ( boost::geometry::distance(point_t(lon, lat), ls)*earth_radius > radius )
-                continue; // skip this result
+              // check if distance is ok using earth as a plane approximation around the line
+              {
+                double distance2 = -1;
+                const double xp = lat*dist_per_degree_lat;
+                const double yp = lon*dist_per_degree_lon;
+                for (size_t i=0; i < longitude.size()-1 && (1 || distance2<0 || distance2>radius2); ++i)
+                  {
+                    // constants used for distance calculations, drop when
+                    // moving back to boost geometry
+                    const double x1 = latitude[i]*dist_per_degree_lat;
+                    const double y1 = longitude[i]*dist_per_degree_lon;
+                    const double x2 = latitude[i+1]*dist_per_degree_lat;
+                    const double y2 = longitude[i+1]*dist_per_degree_lon;
+                    const double px = x2-x1;
+                    const double py = y2-y1;
+                    const double nrm2 = px*px + py*py;
+                
+                    double u = ((xp - x1) * px + (yp - y1) * py) / nrm2;
+                    u = std::max(0.0, std::min(1.0, u));
+                    double dx = (x1 + u * px) - xp;
+                    double dy = (y1 + u * py) - yp;
+                    double dd = dx*dx + dy*dy;
+
+                    if (distance2 < 0 || distance2 > dd) distance2 = dd;
+                  }
+                
+                if ( distance2 > radius2 )
+                  continue;
+              }
+              // // distance check using boost
+              // if ( boost::geometry::distance(point_t(lon, lat), ls)*earth_radius > radius )
+              //   continue; // skip this result
 
               // check name query
               if (!name_query.empty())
