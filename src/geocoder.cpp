@@ -660,7 +660,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
                 double distance2 = -1;
                 const double xp = lat*dist_per_degree_lat;
                 const double yp = lon*dist_per_degree_lon;
-                for (size_t i=0; i < longitude.size()-1 && (1 || distance2<0 || distance2>radius2); ++i)
+                for (size_t i=LineI; i < longitude.size()-1 && (distance2<0 || distance2>radius2); ++i)
                   {
                     // constants used for distance calculations, drop when
                     // moving back to boost geometry
