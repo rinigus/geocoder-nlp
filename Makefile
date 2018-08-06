@@ -21,16 +21,13 @@ CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG
 
 ######################################################
 
-APPNAME := geocoder-nlp
-
 SRCSUBDIR := src
 OBJSUBDIR := obj
 
 INCLUDE  = $(LIBPOSTAL_INCLUDE) -Ithirdparty/sqlite3pp/headeronly_src -I$(SRCSUBDIR)
 LIBRARIES += $(LIBPOSTAL_LIB) $(SQLITE_LIB)
 
-OBJS	= $(patsubst $(SRCSUBDIR)/%.cpp,$(OBJSUBDIR)/%.o,$(wildcard $(SRCSUBDIR)/*.cpp)) \
-	  $(patsubst demo/%.cpp,$(OBJSUBDIR)/demo_%.o,$(wildcard demo/*.cpp))
+OBJS	= $(patsubst $(SRCSUBDIR)/%.cpp,$(OBJSUBDIR)/%.o,$(wildcard $(SRCSUBDIR)/*.cpp)) 
 
 CXX_EXTRA_OPTIONS += -std=c++11
 CXXFLAGS := -O2 -g $(EXTRA_OPTIONS) $(CXX_EXTRA_OPTIONS) $(INCLUDE)  
@@ -38,12 +35,21 @@ CXXFLAGS := -O2 -g $(EXTRA_OPTIONS) $(CXX_EXTRA_OPTIONS) $(INCLUDE)
 AR       = ar 
 LD	 = g++ 
 
-all: $(OBJSUBDIR) $(APPNAME)
+all: $(OBJSUBDIR) geocoder-nlp nearby-line
 
 clean:
 	rm -rf core* $(APPNAME) $(OBJSUBDIR)
 
-$(APPNAME): $(OBJS)
+geocoder-nlp: $(OBJS) $(OBJSUBDIR)/demo_geocoder-nlp.o
+	@echo
+	@echo "--------- LINKING --- $@ "
+	rm -f $(APPNAME)
+	$(LD) -o $@ $^ $(LIBRARIES) $(LD_EXTRA_OPTIONS)
+	@echo
+	@echo '--------- Make done '
+	@echo
+
+nearby-line: $(OBJS) $(OBJSUBDIR)/demo_nearby-line.o
 	@echo
 	@echo "--------- LINKING --- $@ "
 	rm -f $(APPNAME)
@@ -64,7 +70,13 @@ $(OBJSUBDIR)/%.o: $(SRCSUBDIR)/%.cpp
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<
 	@echo
 
-$(OBJSUBDIR)/demo_%.o: demo/%.cpp 
+$(OBJSUBDIR)/demo_geocoder-nlp.o: demo/geocoder-nlp.cpp 
+	@echo
+	@echo "------------ $< "
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<
+	@echo
+
+$(OBJSUBDIR)/demo_nearby-line.o: demo/nearby-line.cpp 
 	@echo
 	@echo "------------ $< "
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<

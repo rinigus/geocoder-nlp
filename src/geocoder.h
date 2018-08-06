@@ -63,6 +63,20 @@ namespace GeoNLP {
                        std::vector<GeoResult> &result,
                        Postal &postal );
 
+    /// \brief Search for objects within given radius from specified linestring and matching the query
+    ///
+    /// Here, radius is given in meters and the reference linestring is
+    /// given by latitude and longitude vectors (WGS 84). Query is given by name
+    /// and type. When the both are given, the both queries have to be fulfilled
+    /// (think of cafe and its name). Within type and name queries, a single match
+    /// is sufficient.
+    bool search_nearby(const std::vector< std::string > &name_query,
+                       const std::vector< std::string > &type_query,
+                       const std::vector<double> &latitude, const std::vector<double> &longitude,
+                       double radius,
+                       std::vector<GeoResult> &result,
+                       Postal &postal );
+
     int get_levels_in_title() const { return m_levels_in_title; }
     void set_levels_in_title(int l) { m_levels_in_title = l; }
 

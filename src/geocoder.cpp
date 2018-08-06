@@ -6,10 +6,15 @@
 #include <iostream>
 #include <algorithm>
 
+#include <boost/geometry.hpp>
+
 using namespace GeoNLP;
 
 const int GeoNLP::Geocoder::version{4};
 const size_t GeoNLP::Geocoder::num_languages{2}; // 1 (default) + 1 (english)
+
+typedef boost::geometry::model::point< double, 2, boost::geometry::cs::spherical_equatorial<boost::geometry::degree> > point_t;
+
 
 Geocoder::Geocoder()
 {
@@ -446,6 +451,7 @@ bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value rang
 }
 
 
+// search next to the reference point
 bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
                               const std::vector< std::string > &type_query,
                               double latitude, double longitude,
@@ -462,15 +468,22 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
   const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude*M_PI/180.0));
 
   try {
-    std::string query_txt( "SELECT o.id, o.name, t.name, o.box_id, o.latitude, o.longitude "
+    std::string query_txt( "SELECT o.id, o.name, t.name, o.latitude, o.longitude "
                            "FROM object_primary o "
                            "JOIN type t ON o.type_id=t.id "
                            "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
                            "WHERE " );
 
     if (!type_query.empty())
-      for (auto tq: type_query)
-        query_txt += " t.name = '" + tq + "' AND ";
+      {
+        std::string tqfull;
+        for (auto tq: type_query)
+          {
+            if (!tqfull.empty()) tqfull += " OR ";
+            tqfull += " t.name = '" + tq + "'";
+          }
+        query_txt += tqfull + " AND ";
+      }
 
     query_txt += "maxLat>=:minLat AND minLat<=:maxLat AND maxLon >= :minLon AND minLon <= :maxLon";
 
@@ -483,10 +496,10 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
 
     for (auto v: qry)
       {
-        long long id, box_id;
+        long long id;
         std::string name, type;
         double lat, lon, distance;
-        v.getter() >> id >> name >> type >> box_id >> lat >> lon;
+        v.getter() >> id >> name >> type >> lat >> lon;
 
         // check if distance is ok. note that the distance is expected
         // to be small (on the scale of the planet)
@@ -540,6 +553,150 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
       Geocoder::sort_by_distance( result.begin(), result.end() );
       result.resize(m_max_results);
     }
+
+  return true;
+}
+
+
+// search next to the reference linestring
+bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
+                             const std::vector< std::string > &type_query,
+                             const std::vector<double> &latitude, const std::vector<double> &longitude,
+                             double radius,
+                             std::vector<GeoResult> &result,
+                             Postal &postal )
+{
+  if ( (name_query.empty() && type_query.empty()) || radius < 0 || latitude.size() < 2 || latitude.size() != longitude.size())
+    return false;
+
+  const double earth_radius = 6378137;
+  
+  // fill linestring
+  point_t reference(longitude[0], latitude[0]);
+  boost::geometry::model::linestring<point_t> ls;
+  for (size_t i=0; i < latitude.size(); ++i)
+    boost::geometry::append(ls, point_t(longitude[i],latitude[i]));
+  
+  try {
+
+    std::set<long long> processed_boxes;
+    for (size_t LineI = 0; LineI < longitude.size()-1 && (m_max_results < 0 || result.size() <=  m_max_results); ++LineI)
+      {
+
+        // step 1: get boxes that are near the line segment
+        std::deque<long long> newboxes;
+        {
+          sqlite3pp::query qry(m_db,
+                               "SELECT id, minLat, maxLat, minLon, maxLon "
+                               "FROM object_primary_rtree "
+                               "WHERE maxLat>=:minLat AND minLat<=:maxLat AND maxLon >= :minLon AND minLon <= :maxLon" );
+          
+          auto bb_lat = std::minmax(latitude[LineI], latitude[LineI+1]);
+          auto bb_lon = std::minmax(longitude[LineI], longitude[LineI+1]);
+          
+          // rough estimates of distance (meters) per degree
+          const double dist_per_degree_lat = 111e3;
+          const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude[LineI]*M_PI/180.0));
+          
+          qry.bind(":minLat", bb_lat.first - radius/dist_per_degree_lat);
+          qry.bind(":maxLat", bb_lat.second + radius/dist_per_degree_lat);
+          qry.bind(":minLon", bb_lon.first - radius/dist_per_degree_lon);
+          qry.bind(":maxLon", bb_lon.second + radius/dist_per_degree_lon);
+          
+          for (auto v: qry)
+            {
+              long long id;
+              double minLat, maxLat, minLon, maxLon;
+              v.getter() >> id >> minLat >> maxLat >> minLon >> maxLon;
+              
+              if (processed_boxes.count(id))
+                continue;
+              processed_boxes.insert(id);
+              newboxes.push_back(id);
+            }
+        }
+
+        // check if anything is new
+        if (newboxes.empty()) continue;
+
+        // step 2: search for objects from new boxes
+        {
+          std::ostringstream qtxt;
+          qtxt << "SELECT o.id, o.name, t.name, o.latitude, o.longitude "
+               << "FROM object_primary o "
+               << "JOIN type t ON o.type_id=t.id "
+               << "WHERE ";
+
+          if (!type_query.empty())
+            {
+              std::string tqfull;
+              for (auto tq: type_query)
+                {
+                  if (!tqfull.empty()) tqfull += " OR ";
+                  tqfull += " t.name = '" + tq + "'";
+                }
+              qtxt << tqfull << " AND ";
+            }
+
+          qtxt << " o.box_id IN (";
+          for (size_t i=0; i < newboxes.size(); ++i)
+            {
+              if (i) qtxt << ", ";
+              qtxt << newboxes[i];
+            }
+          qtxt << ")";
+          
+          sqlite3pp::query qry(m_db, qtxt.str().c_str());
+
+          for (auto v: qry)
+            {
+              long long id;
+              std::string name, type;
+              double lat, lon, distance;
+              v.getter() >> id >> name >> type >> lat >> lon;
+
+              // check if distance is ok
+              if ( boost::geometry::distance(point_t(lon, lat), ls)*earth_radius > radius )
+                continue; // skip this result
+
+              // check name query
+              if (!name_query.empty())
+                {
+                  bool found = false;
+                  std::vector<std::string> expanded;
+                  postal.expand_string( name, expanded );
+        
+                  for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
+                    for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
+                      // search is for whether the name starts with the query or has
+                      // the query after space (think of street Dr. Someone and query Someone)
+                      found = ( e->compare(0, q->length(), *q) == 0  ||
+                                e->find(" " + *q) != std::string::npos );
+                  
+                  if (!found)
+                    continue; // substring not found
+                }
+        
+              GeoResult r;
+              r.id = id;
+        
+              get_name(r.id, r.title, r.address, r.admin_levels, m_levels_in_title);
+              r.type = get_type(r.id);
+        
+              r.latitude = lat;
+              r.longitude = lon;
+              r.distance = LineI;
+              r.levels_resolved = 1; // not used in this search
+        
+              result.push_back(r);
+            }
+        }
+      }
+  }
+  catch (sqlite3pp::database_error e) {
+    std::cerr << "Geocoder exception: " << e.what() << std::endl;
+    return false;
+  }
 
   return true;
 }
