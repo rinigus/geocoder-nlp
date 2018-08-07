@@ -15,6 +15,14 @@ const size_t GeoNLP::Geocoder::num_languages{2}; // 1 (default) + 1 (english)
 
 // typedef boost::geometry::model::point< double, 2, boost::geometry::cs::spherical_equatorial<boost::geometry::degree> > point_t;
 
+////////////////////
+// helper functions
+
+static double distance_per_latitude() { return 111e3; }
+static double distance_per_longitude(double latitude) { return std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude*M_PI/180.0)); }
+
+////////////////////
+// Geocoder class
 
 Geocoder::Geocoder()
 {
@@ -464,8 +472,8 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
 
   // rough estimates of distance (meters) per degree
   //
-  const double dist_per_degree_lat = 111e3;
-  const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude*M_PI/180.0));
+  const double dist_per_degree_lat = distance_per_latitude();
+  const double dist_per_degree_lon = distance_per_longitude(latitude);
 
   try {
     std::string query_txt( "SELECT o.id, o.name, t.name, o.latitude, o.longitude "
@@ -564,7 +572,8 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
                              const std::vector<double> &latitude, const std::vector<double> &longitude,
                              double radius,
                              std::vector<GeoResult> &result,
-                             Postal &postal )
+                             Postal &postal,
+                             size_t skip_points)
 {
   if ( (name_query.empty() && type_query.empty()) || radius < 0 || latitude.size() < 2 || latitude.size() != longitude.size())
     return false;
@@ -580,12 +589,12 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
   try {
 
     std::set<long long> processed_boxes;
-    for (size_t LineI = 0; LineI < longitude.size()-1 && (m_max_results < 0 || result.size() <=  m_max_results); ++LineI)
+    for (size_t LineI = skip_points; LineI < longitude.size()-1 && (m_max_results < 0 || result.size() <=  m_max_results); ++LineI)
       {
 
         // rough estimates of distance (meters) per degree
-        const double dist_per_degree_lat = 111e3;
-        const double dist_per_degree_lon = std::max(1000.0, M_PI/180.0 * 6378137.0 * cos(latitude[LineI]*M_PI/180.0));
+        const double dist_per_degree_lat = distance_per_latitude();
+        const double dist_per_degree_lon = distance_per_longitude(latitude[LineI]);
           
         // step 1: get boxes that are near the line segment
         std::deque<long long> newboxes;
@@ -728,4 +737,54 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
   }
 
   return true;
+}
+
+
+// search next to the reference linestring: overloaded version
+bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
+                             const std::vector< std::string > &type_query,
+                             const std::vector<double> &latitude, const std::vector<double> &longitude,
+                             double reference_latitude, double reference_longitude,
+                             double radius,
+                             std::vector<GeoResult> &result,
+                             Postal &postal)
+{
+  // make all checks first
+  if ( (name_query.empty() && type_query.empty()) || radius < 0 || latitude.size() < 2 || latitude.size() != longitude.size())
+    return false;
+
+  // rough estimates of distance (meters) per degree
+  const double dist_per_degree_lat = distance_per_latitude();
+  const double dist_per_degree_lon = distance_per_longitude(reference_latitude);
+
+  const double xp = reference_latitude*dist_per_degree_lat;
+  const double yp = reference_longitude*dist_per_degree_lon;
+
+  size_t currI = 0;
+  double currD2 = -1;
+  for (size_t i = 0; i < longitude.size()-1; ++i)
+    {
+      double distance2 = -1;
+      const double x1 = latitude[i]*dist_per_degree_lat;
+      const double y1 = longitude[i]*dist_per_degree_lon;
+      const double x2 = latitude[i+1]*dist_per_degree_lat;
+      const double y2 = longitude[i+1]*dist_per_degree_lon;
+      const double px = x2-x1;
+      const double py = y2-y1;
+      const double nrm2 = px*px + py*py;
+                
+      double u = ((xp - x1) * px + (yp - y1) * py) / nrm2;
+      u = std::max(0.0, std::min(1.0, u));
+      double dx = (x1 + u * px) - xp;
+      double dy = (y1 + u * py) - yp;
+      double dd = dx*dx + dy*dy;
+
+      if (currD2 < 0 || currD2 > dd)
+        {
+          currI = i;
+          currD2 = dd;
+        }
+    }
+
+  return search_nearby( name_query, type_query, latitude, longitude, radius, result, postal, currI );
 }

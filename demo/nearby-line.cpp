@@ -74,7 +74,8 @@ int main(int argc, char *argv[])
   
   if ( !geo.search_nearby(parsed_name,
                           type_query,
-                          latitude, longitude, radius,
+                          latitude, longitude,
+                          radius,
                           result,
                           postal) )
     std::cout << "Failed to search\n";
