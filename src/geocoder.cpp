@@ -589,13 +589,23 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
   try {
 
     std::set<long long> processed_boxes;
+    double line_distance = 0;
     for (size_t LineI = skip_points; LineI < longitude.size()-1 && (m_max_results < 0 || result.size() <=  m_max_results); ++LineI)
       {
 
         // rough estimates of distance (meters) per degree
         const double dist_per_degree_lat = distance_per_latitude();
         const double dist_per_degree_lon = distance_per_longitude(latitude[LineI]);
-          
+        {
+          double x1 = latitude[LineI]*dist_per_degree_lat;
+          double y1 = longitude[LineI]*dist_per_degree_lon;
+          double x2 = latitude[LineI+1]*dist_per_degree_lat;
+          double y2 = longitude[LineI+1]*dist_per_degree_lon;
+          double dx = x2-x1;
+          double dy = y2-y1;
+          line_distance += sqrt(dx*dx+dy*dy);
+        }
+        
         // step 1: get boxes that are near the line segment
         std::deque<long long> newboxes;
         {
@@ -669,6 +679,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
                 double distance2 = -1;
                 const double xp = lat*dist_per_degree_lat;
                 const double yp = lon*dist_per_degree_lon;
+                double u, nrm2; // cache the last result for distance
                 for (size_t i=LineI; i < longitude.size()-1 && (distance2<0 || distance2>radius2); ++i)
                   {
                     // constants used for distance calculations, drop when
@@ -679,10 +690,11 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
                     const double y2 = longitude[i+1]*dist_per_degree_lon;
                     const double px = x2-x1;
                     const double py = y2-y1;
-                    const double nrm2 = px*px + py*py;
-                
-                    double u = ((xp - x1) * px + (yp - y1) * py) / nrm2;
+                    nrm2 = px*px + py*py;
+                    
+                    u = ((xp - x1) * px + (yp - y1) * py) / nrm2;
                     u = std::max(0.0, std::min(1.0, u));
+
                     double dx = (x1 + u * px) - xp;
                     double dy = (y1 + u * py) - yp;
                     double dd = dx*dx + dy*dy;
@@ -692,6 +704,8 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
                 
                 if ( distance2 > radius2 )
                   continue;
+
+                distance = line_distance - (1-u) * sqrt(nrm2);
               }
               // // distance check using boost
               // if ( boost::geometry::distance(point_t(lon, lat), ls)*earth_radius > radius )
@@ -723,7 +737,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
         
               r.latitude = lat;
               r.longitude = lon;
-              r.distance = LineI;
+              r.distance = distance;
               r.levels_resolved = 1; // not used in this search
         
               result.push_back(r);
