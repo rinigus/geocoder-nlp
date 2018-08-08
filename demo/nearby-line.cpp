@@ -88,7 +88,7 @@ int main(int argc, char *argv[])
         {
           std::cout << r.title << "\n"
                     << r.address << "\n"
-                    << r.latitude << ", " << r.longitude << "\n"
+                    << r.latitude << ", " << r.longitude << ": distance - " << r.distance << "\n"
                     << r.type << " / " << r.id << " / " << r.admin_levels << " / " << r.levels_resolved << "\n\n";
           counter++;
         }

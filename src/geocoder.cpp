@@ -740,18 +740,12 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
 }
 
 
-// search next to the reference linestring: overloaded version
-bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
-                             const std::vector< std::string > &type_query,
-                             const std::vector<double> &latitude, const std::vector<double> &longitude,
-                             double reference_latitude, double reference_longitude,
-                             double radius,
-                             std::vector<GeoResult> &result,
-                             Postal &postal)
+int Geocoder::closest_segment(const std::vector<double> &latitude, const std::vector<double> &longitude,
+                              double reference_latitude, double reference_longitude)
 {
   // make all checks first
-  if ( (name_query.empty() && type_query.empty()) || radius < 0 || latitude.size() < 2 || latitude.size() != longitude.size())
-    return false;
+  if ( latitude.size() < 2 || latitude.size() != longitude.size())
+    return -1;
 
   // rough estimates of distance (meters) per degree
   const double dist_per_degree_lat = distance_per_latitude();
@@ -786,5 +780,5 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
         }
     }
 
-  return search_nearby( name_query, type_query, latitude, longitude, radius, result, postal, currI );
+  return currI;
 }

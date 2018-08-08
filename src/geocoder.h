@@ -65,12 +65,17 @@ namespace GeoNLP {
 
     /// \brief Search for objects within given radius from specified linestring and matching the query
     ///
-    /// Here, radius is given in meters and the reference linestring is
-    /// given by latitude and longitude vectors (WGS 84). Query is given by name
-    /// and type. When the both are given, the both queries have to be fulfilled
-    /// (think of cafe and its name). Within type and name queries, a single match
-    /// is sufficient. Parameter skip_points can be used to skip the given number
-    /// of points from the beginning of the line when searching for objects. 
+    /// Here, radius is given in meters and the reference linestring
+    /// is given by latitude and longitude vectors (WGS 84). Query is
+    /// given by name and type. When the both are given, the both
+    /// queries have to be fulfilled (think of cafe and its
+    /// name). Within type and name queries, a single match is
+    /// sufficient.
+    ///
+    /// Parameter skip_points can be used to skip the given number of
+    /// points from the beginning of the line when searching for
+    /// objects. This, for example, is used when looking for objects
+    /// next to route upcoming from the current location
     bool search_nearby(const std::vector< std::string > &name_query,
                        const std::vector< std::string > &type_query,
                        const std::vector<double> &latitude, const std::vector<double> &longitude,
@@ -78,21 +83,6 @@ namespace GeoNLP {
                        std::vector<GeoResult> &result,
                        Postal &postal,
                        size_t skip_points = 0);
-
-    /// \brief Search for objects within given radius from specified linestring and matching the query
-    ///
-    /// Overloaded version allowing to specify a reference point that
-    /// is expected to be on a line. Search is executed on the part of
-    /// the line that starts from the segment that is closest to the
-    /// reference point. This, for example, is used when looking for
-    /// objects next to route upcoming from the current location 
-    bool search_nearby(const std::vector< std::string > &name_query,
-                       const std::vector< std::string > &type_query,
-                       const std::vector<double> &latitude, const std::vector<double> &longitude,
-                       double reference_latitude, double reference_longitude,
-                       double radius,
-                       std::vector<GeoResult> &result,
-                       Postal &postal);
 
     int get_levels_in_title() const { return m_levels_in_title; }
     void set_levels_in_title(int l) { m_levels_in_title = l; }
@@ -159,7 +149,12 @@ namespace GeoNLP {
     static bool distcomp(const Geocoder::GeoResult &i, const Geocoder::GeoResult &j) { return (i.distance<j.distance); }
     
     template<typename T>
-    static void sort_by_distance(T begin, T end) { std::sort(begin, end, distcomp); }
+      static void sort_by_distance(T begin, T end) { std::sort(begin, end, distcomp); }
+
+    // search for the segment on a line that is the closest to the
+    // specified point. returns negative value on error
+    static int closest_segment(const std::vector<double> &latitude, const std::vector<double> &longitude,
+                               double reference_latitude, double reference_longitude);
 
   protected:
     bool search(const Postal::Hierarchy &parsed, std::vector<GeoResult> &result, size_t level=0,
