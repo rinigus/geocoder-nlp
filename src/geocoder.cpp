@@ -204,7 +204,7 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
 
         m_query_count = 0;
         if ( r.size() >= m_levels_resolved ||
-             (r.size() == m_levels_resolved && result.size() < m_max_inter_results) )
+             (r.size() == m_levels_resolved && (m_max_results==0 || result.size() < m_max_inter_results)) )
           search(r, result);
 #ifdef GEONLP_PRINT_DEBUG_QUERIES
         else
@@ -243,7 +243,7 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
 
   // sort and trim results
   std::sort( result.begin(), result.end() );
-  if ( result.size() >=  m_max_results )
+  if ( m_max_results > 0 && result.size() >=  m_max_results )
     result.resize(m_max_results);
 
   return true;
@@ -316,7 +316,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
       if (ids_explored.count(id) > 0)
         continue; // has been looked into it already
 
-      if (parsed.size() < m_levels_resolved || (parsed.size()==m_levels_resolved && result.size() >= m_max_inter_results))
+      if (parsed.size() < m_levels_resolved || (parsed.size()==m_levels_resolved && m_max_results > 0 && result.size() >= m_max_inter_results))
         break; // this search cannot add more results
 
       ids_explored.insert(id);
@@ -350,7 +350,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed,
               m_levels_resolved = levels_resolved;
             }
 
-          if (m_levels_resolved == levels_resolved && (result.size() < m_max_inter_results))
+          if (m_levels_resolved == levels_resolved && (m_max_results == 0 || result.size() < m_max_inter_results))
             {
               bool have_already = false;
               for (const auto &r: result)
@@ -556,7 +556,7 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
     return false;
   }
 
-  if ( result.size() >=  m_max_results )
+  if ( m_max_results > 0 && result.size() >=  m_max_results )
     {
       Geocoder::sort_by_distance( result.begin(), result.end() );
       result.resize(m_max_results);
@@ -590,7 +590,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
 
     std::set<long long> processed_boxes;
     double line_distance = 0;
-    for (size_t LineI = skip_points; LineI < longitude.size()-1 && (m_max_results < 0 || result.size() <=  m_max_results); ++LineI)
+    for (size_t LineI = skip_points; LineI < longitude.size()-1 && (m_max_results == 0 || result.size() <=  m_max_results); ++LineI)
       {
 
         // rough estimates of distance (meters) per degree
