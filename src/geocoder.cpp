@@ -578,7 +578,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
   if ( (name_query.empty() && type_query.empty()) || radius < 0 || latitude.size() < 2 || latitude.size() != longitude.size())
     return false;
 
-  const double earth_radius = 6378137;
+  //const double earth_radius = 6378137;
   const double radius2 = radius*radius;
   
   // // fill linestring
@@ -679,7 +679,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
                 double distance2 = -1;
                 const double xp = lat*dist_per_degree_lat;
                 const double yp = lon*dist_per_degree_lon;
-                double u, nrm2; // cache the last result for distance
+                double u=0, nrm2=0; // cache the last result for distance
                 for (size_t i=LineI; i < longitude.size()-1 && (distance2<0 || distance2>radius2); ++i)
                   {
                     // constants used for distance calculations, drop when
@@ -772,7 +772,6 @@ int Geocoder::closest_segment(const std::vector<double> &latitude, const std::ve
   double currD2 = -1;
   for (size_t i = 0; i < longitude.size()-1; ++i)
     {
-      double distance2 = -1;
       const double x1 = latitude[i]*dist_per_degree_lat;
       const double y1 = longitude[i]*dist_per_degree_lon;
       const double x2 = latitude[i+1]*dist_per_degree_lat;

@@ -30,7 +30,7 @@ LIBRARIES += $(LIBPOSTAL_LIB) $(SQLITE_LIB)
 OBJS	= $(patsubst $(SRCSUBDIR)/%.cpp,$(OBJSUBDIR)/%.o,$(wildcard $(SRCSUBDIR)/*.cpp)) 
 
 CXX_EXTRA_OPTIONS += -std=c++11
-CXXFLAGS := -O2 -g $(EXTRA_OPTIONS) $(CXX_EXTRA_OPTIONS) $(INCLUDE)  
+CXXFLAGS := -Wall -O2 -g $(EXTRA_OPTIONS) $(CXX_EXTRA_OPTIONS) $(INCLUDE)  
 
 AR       = ar 
 LD	 = g++ 
