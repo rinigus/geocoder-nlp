@@ -652,9 +652,10 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
               for (auto tq: type_query)
                 {
                   if (!tqfull.empty()) tqfull += " OR ";
+                  else tqfull = "(";
                   tqfull += " t.name = '" + tq + "'";
                 }
-              qtxt << tqfull << " AND ";
+              qtxt << tqfull << ") AND ";
             }
 
           qtxt << " o.box_id IN (";
@@ -664,6 +665,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
               qtxt << newboxes[i];
             }
           qtxt << ")";
+          std::cout << qtxt.str() << "\n";
           
           sqlite3pp::query qry(m_db, qtxt.str().c_str());
 
