@@ -18,6 +18,7 @@ LD_EXTRA_OPTIONS += -pthread -lmarisa -lkyotocabinet
 
 CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG_QUERIES
 CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_DEBUG
+CXX_EXTRA_OPTIONS += -DGEONLP_PRINT_SQL
 
 ######################################################
 
@@ -35,7 +36,7 @@ CXXFLAGS := -Wall -O2 -g $(EXTRA_OPTIONS) $(CXX_EXTRA_OPTIONS) $(INCLUDE)
 AR       = ar 
 LD	 = g++ 
 
-all: $(OBJSUBDIR) geocoder-nlp nearby-line
+all: $(OBJSUBDIR) geocoder-nlp nearby-line nearby-point
 
 clean:
 	rm -rf core* $(APPNAME) $(OBJSUBDIR)
@@ -50,6 +51,15 @@ geocoder-nlp: $(OBJS) $(OBJSUBDIR)/demo_geocoder-nlp.o
 	@echo
 
 nearby-line: $(OBJS) $(OBJSUBDIR)/demo_nearby-line.o
+	@echo
+	@echo "--------- LINKING --- $@ "
+	rm -f $(APPNAME)
+	$(LD) -o $@ $^ $(LIBRARIES) $(LD_EXTRA_OPTIONS)
+	@echo
+	@echo '--------- Make done '
+	@echo
+
+nearby-point: $(OBJS) $(OBJSUBDIR)/demo_nearby-point.o
 	@echo
 	@echo "--------- LINKING --- $@ "
 	rm -f $(APPNAME)
@@ -77,6 +87,12 @@ $(OBJSUBDIR)/demo_geocoder-nlp.o: demo/geocoder-nlp.cpp
 	@echo
 
 $(OBJSUBDIR)/demo_nearby-line.o: demo/nearby-line.cpp 
+	@echo
+	@echo "------------ $< "
+	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<
+	@echo
+
+$(OBJSUBDIR)/demo_nearby-point.o: demo/nearby-point.cpp 
 	@echo
 	@echo "------------ $< "
 	$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) -o $@ $<

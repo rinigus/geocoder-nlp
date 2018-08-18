@@ -476,26 +476,31 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
   const double dist_per_degree_lon = distance_per_longitude(latitude);
 
   try {
-    std::string query_txt( "SELECT o.id, o.name, t.name, o.latitude, o.longitude "
-                           "FROM object_primary o "
-                           "JOIN type t ON o.type_id=t.id "
-                           "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
-                           "WHERE " );
-
+    std::ostringstream qtxt;
+    qtxt << "SELECT o.id, o.name, t.name, o.latitude, o.longitude "
+         << "FROM object_primary o "
+         << "JOIN type t ON o.type_id=t.id "
+         << "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
+         << "WHERE ";
+    
     if (!type_query.empty())
       {
         std::string tqfull;
         for (auto tq: type_query)
           {
             if (!tqfull.empty()) tqfull += " OR ";
+            else tqfull = "(";
             tqfull += " t.name = '" + tq + "'";
           }
-        query_txt += tqfull + " AND ";
+        qtxt << tqfull << ") AND ";
       }
+    
+    qtxt << "maxLat>=:minLat AND minLat<=:maxLat AND maxLon >= :minLon AND minLon <= :maxLon";
 
-    query_txt += "maxLat>=:minLat AND minLat<=:maxLat AND maxLon >= :minLon AND minLon <= :maxLon";
-
-    sqlite3pp::query qry(m_db, query_txt.c_str());
+#ifdef GEONLP_PRINT_SQL
+    std::cout << qtxt.str() << "\n";
+#endif
+    sqlite3pp::query qry(m_db, qtxt.str().c_str());
 
     qry.bind(":minLat", latitude - radius/dist_per_degree_lat);
     qry.bind(":maxLat", latitude + radius/dist_per_degree_lat);
@@ -665,8 +670,9 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
               qtxt << newboxes[i];
             }
           qtxt << ")";
+#ifdef GEONLP_PRINT_SQL
           std::cout << qtxt.str() << "\n";
-          
+#endif
           sqlite3pp::query qry(m_db, qtxt.str().c_str());
 
           for (auto v: qry)
