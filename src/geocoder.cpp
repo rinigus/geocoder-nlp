@@ -477,7 +477,7 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
 
   try {
     std::ostringstream qtxt;
-    qtxt << "SELECT o.id, o.name, t.name, o.latitude, o.longitude "
+    qtxt << "SELECT o.id, o.name, o.name_extra, o.name_en, t.name, o.latitude, o.longitude "
          << "FROM object_primary o "
          << "JOIN type t ON o.type_id=t.id "
          << "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
@@ -510,9 +510,9 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
     for (auto v: qry)
       {
         long long id;
-        std::string name, type;
+        std::string name, name_extra, name_en, type;
         double lat, lon, distance;
-        v.getter() >> id >> name >> type >> lat >> lon;
+        v.getter() >> id >> name >> name_extra >> name_en >> type >> lat >> lon;
 
         // check if distance is ok. note that the distance is expected
         // to be small (on the scale of the planet)
@@ -528,15 +528,23 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
         if (!name_query.empty())
           {
             bool found = false;
-            std::vector<std::string> expanded;
-            postal.expand_string( name, expanded );
+            std::set<std::string> names;
+            names.insert(name);
+            names.insert(name_extra);
+            names.insert(name_en);
+            for (auto n = names.begin(); n!=names.end() && !found; ++n)
+              {
+                if (n->empty()) continue;
+                std::vector<std::string> expanded;
+                postal.expand_string( *n, expanded );
 
-            for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
-              for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
-                // search is for whether the name starts with the query or has
-                // the query after space (think of street Dr. Someone and query Someone)
-                found = ( e->compare(0, q->length(), *q) == 0  ||
-                          e->find(" " + *q) != std::string::npos );
+                for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
+                  for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
+                    // search is for whether the name starts with the query or has
+                    // the query after space (think of street Dr. Someone and query Someone)
+                    found = ( e->compare(0, q->length(), *q) == 0  ||
+                              e->find(" " + *q) != std::string::npos );
+              }
 
             if (!found)
               continue; // substring not found
@@ -646,7 +654,8 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
         // step 2: search for objects from new boxes
         {
           std::ostringstream qtxt;
-          qtxt << "SELECT o.id, o.name, t.name, o.latitude, o.longitude "
+          qtxt << "SELECT o.id, o.name, o.name_extra, o.name_en, t.name, "
+               << "o.latitude, o.longitude "
                << "FROM object_primary o "
                << "JOIN type t ON o.type_id=t.id "
                << "WHERE ";
@@ -678,9 +687,9 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
           for (auto v: qry)
             {
               long long id;
-              std::string name, type;
+              std::string name, name_extra, name_en, type;
               double lat, lon, distance;
-              v.getter() >> id >> name >> type >> lat >> lon;
+              v.getter() >> id >> name >> name_extra >> name_en >> type >> lat >> lon;
 
               // check if distance is ok using earth as a plane approximation around the line
               {
@@ -723,15 +732,23 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
               if (!name_query.empty())
                 {
                   bool found = false;
-                  std::vector<std::string> expanded;
-                  postal.expand_string( name, expanded );
+                  std::set<std::string> names;
+                  names.insert(name);
+                  names.insert(name_extra);
+                  names.insert(name_en);
+                  for (auto n = names.begin(); n!=names.end() && !found; ++n)
+                    {
+                      if (n->empty()) continue;
+                      std::vector<std::string> expanded;
+                      postal.expand_string( *n, expanded );
         
-                  for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
-                    for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
-                      // search is for whether the name starts with the query or has
-                      // the query after space (think of street Dr. Someone and query Someone)
-                      found = ( e->compare(0, q->length(), *q) == 0  ||
-                                e->find(" " + *q) != std::string::npos );
+                      for ( auto q = name_query.cbegin(); !found && q != name_query.cend(); ++q )
+                        for ( auto e = expanded.begin(); !found && e != expanded.end(); ++e )
+                          // search is for whether the name starts with the query or has
+                          // the query after space (think of street Dr. Someone and query Someone)
+                          found = ( e->compare(0, q->length(), *q) == 0  ||
+                                    e->find(" " + *q) != std::string::npos );
+                    }
                   
                   if (!found)
                     continue; // substring not found
