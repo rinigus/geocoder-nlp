@@ -324,7 +324,7 @@ bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &r
 
 void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseResult> &result)
 {
-  if (!m_use_postal || !init())
+  if (!init())
     {
       result.push_back(input);
       return;
