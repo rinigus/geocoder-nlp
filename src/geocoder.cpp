@@ -467,7 +467,7 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
                               std::vector<GeoResult> &result,
                               Postal &postal )
 {
-  if ( (name_query.empty() && type_query.empty()) || radius < 0 )
+  if ( radius < 0 )
     return false;
 
   // rough estimates of distance (meters) per degree
@@ -588,7 +588,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
                              Postal &postal,
                              size_t skip_points)
 {
-  if ( (name_query.empty() && type_query.empty()) || radius < 0 || latitude.size() < 2 || latitude.size() != longitude.size())
+  if ( radius < 0 || latitude.size() < 2 || latitude.size() != longitude.size())
     return false;
 
   //const double earth_radius = 6378137;
