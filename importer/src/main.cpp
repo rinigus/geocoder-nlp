@@ -35,7 +35,7 @@
 
 #define MAX_COMMAS 10 /// maximal number of commas allowed in a name
 
-#define TEMPORARY "TEMPORARY" // set to empty if need to debug import
+#define TEMPORARY //"TEMPORARY" // set to empty if need to debug import
 
 typedef long long int sqlid; /// type used by IDs in SQLite
 
@@ -156,9 +156,13 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
 
 typedef osmscout::FeatureValueReader<osmscout::NameAltFeature,osmscout::NameAltFeatureValue> NameAltReader;
 typedef osmscout::FeatureValueReader<osmscout::NameFeature,osmscout::NameFeatureValue> NameReader;
+typedef osmscout::FeatureValueReader<osmscout::PhoneFeature,osmscout::PhoneFeatureValue> PhoneReader;
+typedef osmscout::FeatureValueReader<osmscout::WebsiteFeature,osmscout::WebsiteFeatureValue> WebsiteReader;
 NameAltReader *nameAltReader{NULL};
 NameReader *nameReader{NULL};
-void GetNames(const osmscout::FeatureValueBuffer &features, std::string &name, std::string &name_en)
+PhoneReader *phoneReader{NULL};
+WebsiteReader *websiteReader{NULL};
+void GetFeatures(const osmscout::FeatureValueBuffer &features, std::string &name, std::string &name_en, std::string &phone, std::string &website)
 {
   osmscout::NameFeatureValue *nameValue=nameReader->GetValue(features);
   if (nameValue != NULL)
@@ -167,12 +171,22 @@ void GetNames(const osmscout::FeatureValueBuffer &features, std::string &name, s
   osmscout::NameAltFeatureValue *nameAltValue=nameAltReader->GetValue(features);
   if (nameAltValue != NULL)
     name_en = nameAltValue->GetNameAlt();
+
+  osmscout::PhoneFeatureValue *phoneValue=phoneReader->GetValue(features);
+  if (phoneValue != NULL)
+    phone = phoneValue->GetPhone();
+
+  osmscout::WebsiteFeatureValue *websiteValue=websiteReader->GetValue(features);
+  if (websiteValue != NULL)
+    website = websiteValue->GetWebsite();
 }
 
-void GetObjectNames( const osmscout::DatabaseRef& database,
-                     const osmscout::ObjectFileRef& object,
-                     std::string &name,
-                     std::string &name_en )
+void GetObjectFeatures( const osmscout::DatabaseRef& database,
+                        const osmscout::ObjectFileRef& object,
+                        std::string &name,
+                        std::string &name_en,
+                        std::string &phone,
+                        std::string &website )
 {
   if (object.GetType()==osmscout::RefType::refNode)
     {
@@ -180,7 +194,7 @@ void GetObjectNames( const osmscout::DatabaseRef& database,
 
       if (database->GetNodeByOffset(object.GetFileOffset(),
                                     node))
-        GetNames(node->GetFeatureValueBuffer(), name, name_en);
+        GetFeatures(node->GetFeatureValueBuffer(), name, name_en, phone, website);
     }
   else if (object.GetType()==osmscout::RefType::refArea)
     {
@@ -188,7 +202,7 @@ void GetObjectNames( const osmscout::DatabaseRef& database,
 
       if (database->GetAreaByOffset(object.GetFileOffset(),
                                     area))
-        GetNames(area->GetFeatureValueBuffer(), name, name_en);
+        GetFeatures(area->GetFeatureValueBuffer(), name, name_en, phone, website);
     }
   else if (object.GetType()==osmscout::RefType::refWay)
     {
@@ -196,7 +210,7 @@ void GetObjectNames( const osmscout::DatabaseRef& database,
 
       if (database->GetWayByOffset(object.GetFileOffset(),
                                    way))
-        GetNames(way->GetFeatureValueBuffer(), name, name_en);
+        GetFeatures(way->GetFeatureValueBuffer(), name, name_en, phone, website);
     }
 }
 
@@ -231,6 +245,8 @@ public:
     std::string type;
     std::string name;
     std::string name_en;
+    std::string phone;
+    std::string website;
     osmscout::GeoCoord coordinates;
     std::string scoutid = address.object.GetName();
     sqlid id;
@@ -238,7 +254,7 @@ public:
     // check if we have this object inserted already
     if (m_address_poi_inserted.count(scoutid) > 0)
       {
-        // GetObjectNames(m_database, address.object, name, name_en);
+        // GetObjectFeatures(m_database, address.object, name, name_en, phone, website);
         // std::cout << "AddrVisitor: " << address.name << " " << name << " " << scoutid << " inserted already\n";
         return true;
       }
@@ -249,14 +265,16 @@ public:
     GetObjectTypeCoor(m_database, address.object, type, coordinates);
     id = IDs.next();
 
-    GetObjectNames(m_database, address.object, name, name_en);
+    GetObjectFeatures(m_database, address.object, name, name_en, phone, website);
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << scoutid
                  << address.name
                  << name
                  << name_en
+                 << phone
+                 << website
                  << m_parent
                  << coordinates.GetLon()
                  << coordinates.GetLat();
@@ -291,6 +309,8 @@ public:
     std::string type;
     std::string name;
     std::string name_en;
+    std::string phone;
+    std::string website;
     osmscout::GeoCoord coordinates;
     std::string scoutid = poi.object.GetName();
     sqlid id;
@@ -298,14 +318,14 @@ public:
     // check if we have this object inserted already
     if (m_address_poi_inserted.count(scoutid) > 0)
       {
-        // GetObjectNames(m_database, poi.object, name, name_en);
+        // GetObjectFeatures(m_database, poi.object, name, name_en, phone, website);
         // std::cout << "POIVisitor: " << poi.name << " " << name << " " << scoutid << " inserted already\n";
         return true;
       }
 
     // allow POIs without name only if they are of white-listed types
     GetObjectTypeCoor(m_database, poi.object, type, coordinates);
-    GetObjectNames(m_database, poi.object, name, name_en);
+    GetObjectFeatures(m_database, poi.object, name, name_en, phone, website);
 
     if (name.empty() && m_poi_types_whitelist.count(type) == 0)
       return true;
@@ -315,12 +335,14 @@ public:
 
     id = IDs.next();
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << scoutid
                  << poi.name
                  << name
                  << name_en
+                 << phone
+                 << website
                  << m_parent
                  << coordinates.GetLon()
                  << coordinates.GetLat();
@@ -355,6 +377,8 @@ public:
     std::string type;
     std::string name;
     std::string name_en;
+    std::string phone;
+    std::string website;
     osmscout::GeoCoord coordinates;
     sqlid id;
     sqlid locID;
@@ -369,13 +393,15 @@ public:
     locID = id = IDs.next();
     IDs.set_id(location.locationOffset, id);
 
-    GetObjectNames(m_database, location.objects[ location.objects.size()/2 ], name, name_en);
+    GetObjectFeatures(m_database, location.objects[ location.objects.size()/2 ], name, name_en, phone, website);
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << location.name
                  << name
                  << name_en
+                 << phone
+                 << website
                  << m_parent
                  << coordinates.GetLon()
                  << coordinates.GetLat();
@@ -415,6 +441,8 @@ public:
     std::string type;
     std::string name;
     std::string name_en;
+    std::string phone;
+    std::string website;
     osmscout::GeoCoord coordinates;
     sqlid id;
     sqlid regionID;
@@ -423,13 +451,15 @@ public:
     regionID = id = IDs.next();
     IDs.set_id(region.regionOffset, id);
 
-    GetObjectNames(m_database, region.object, name, name_en);
+    GetObjectFeatures(m_database, region.object, name, name_en, phone, website);
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << region.name
                  << name
                  << name_en
+                 << phone
+                 << website
                  << IDs.get_id(region.parentRegionOffset)
                  << coordinates.GetLon()
                  << coordinates.GetLat();
@@ -447,17 +477,19 @@ public:
              saved_names.end(),
              region.aliasName) != saved_names.end() )
       {
-        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         GetObjectTypeCoor(m_database, region.aliasObject, type, coordinates);
         id = IDs.next();
 
-        GetObjectNames(m_database, region.aliasObject, name, name_en);
+        GetObjectFeatures(m_database, region.aliasObject, name, name_en, phone, website);
 
         cmd.binder() << id
                      << region.aliasName
                      << name
                      << name_en
+                     << phone
+                     << website
                      << IDs.get_id(region.parentRegionOffset)
                      << coordinates.GetLon()
                      << coordinates.GetLat();
@@ -470,18 +502,20 @@ public:
 
     for (auto alias: region.aliases)
       {
-        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         osmscout::ObjectFileRef object(alias.objectOffset, osmscout::refNode);
         GetObjectTypeCoor(m_database, object, type, coordinates);
         id = IDs.next();
 
-        GetObjectNames(m_database, object, name, name_en);
+        GetObjectFeatures(m_database, object, name, name_en, phone, website);
 
         cmd.binder() << id
                      << alias.name
                      << name
                      << name_en
+                     << phone
+                     << website
                      << regionID
                      << coordinates.GetLon()
                      << coordinates.GetLat();
@@ -850,6 +884,8 @@ int main(int argc, char* argv[])
 
   nameReader = new NameReader(*database->GetTypeConfig());
   nameAltReader = new NameAltReader(*database->GetTypeConfig());
+  phoneReader = new PhoneReader(*database->GetTypeConfig());
+  websiteReader = new WebsiteReader(*database->GetTypeConfig());
 
   sqlite3pp::database db(GeoNLP::Geocoder::name_primary(database_path).c_str());
 
@@ -868,7 +904,7 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
   db.execute( "DROP TABLE IF EXISTS object_primary_rtree" );
 
-  db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, scoutid TEXT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, latitude REAL, longitude REAL)");
+  db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, scoutid TEXT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, website TEXT, parent INTEGER, latitude REAL, longitude REAL)");
   db.execute( "CREATE " TEMPORARY " TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
               "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
@@ -891,11 +927,11 @@ int main(int argc, char* argv[])
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
   db.execute( "INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp" );
   db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-              "name TEXT NOT NULL, name_extra TEXT, name_en TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
+              "name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, website TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
               "FOREIGN KEY (type_id) REFERENCES type(id))");
 
-  db.execute( "INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, parent, type_id, latitude, longitude, boxstr) "
-              "SELECT p.id, p.name, p.name_extra, p.name_en, p.parent, type.id, p.latitude, p.longitude, "
+  db.execute( "INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, phone, website, parent, type_id, latitude, longitude, boxstr) "
+              "SELECT p.id, p.name, p.name_extra, p.name_en, p.phone, p.website, p.parent, type.id, p.latitude, p.longitude, "
               // LINE BELOW DETERMINES ROUNDING USED FOR BOXES
               "CAST(CAST(p.latitude*100 AS INTEGER) AS TEXT) || ',' || CAST(CAST(p.longitude*100 AS INTEGER) AS TEXT) "
               "FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
@@ -904,11 +940,11 @@ int main(int argc, char* argv[])
   db.execute( "CREATE " TEMPORARY " TABLE boxids (id INTEGER PRIMARY KEY AUTOINCREMENT, boxstr TEXT, CONSTRAINT struni UNIQUE (boxstr))" );
   db.execute( "INSERT INTO boxids (boxstr) SELECT DISTINCT boxstr FROM object_primary_tmp2" );
 
-  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, "
+  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, website TEXT, "
               "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
               "FOREIGN KEY (type_id) REFERENCES type(id))" );
-  db.execute( "INSERT INTO object_primary (id, name, name_extra, name_en, parent, type_id, latitude, longitude, box_id) "
-              "SELECT o.id, name, name_extra, name_en, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
+  db.execute( "INSERT INTO object_primary (id, name, name_extra, name_en, phone, website, parent, type_id, latitude, longitude, box_id) "
+              "SELECT o.id, name, name_extra, name_en, phone, website, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
 
   db.execute( "DROP INDEX IF EXISTS idx_object_primary_box" );
   db.execute( "CREATE INDEX idx_object_primary_box ON object_primary (box_id)" );

@@ -10,7 +10,7 @@
 
 using namespace GeoNLP;
 
-const int GeoNLP::Geocoder::version{4};
+const int GeoNLP::Geocoder::version{5};
 const size_t GeoNLP::Geocoder::num_languages{2}; // 1 (default) + 1 (english)
 
 // typedef boost::geometry::model::point< double, 2, boost::geometry::cs::spherical_equatorial<boost::geometry::degree> > point_t;
@@ -224,6 +224,7 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
       {
         get_name(r.id, r.title, r.address, r.admin_levels, m_levels_in_title);
         r.type = get_type(r.id);
+        get_features(r);
 
         sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
         qry.bind(1, r.id);
@@ -434,6 +435,19 @@ std::string Geocoder::get_type(long long id)
 }
 
 
+void Geocoder::get_features(GeoResult &r)
+{
+  sqlite3pp::query qry(m_db, "SELECT phone, website FROM object_primary WHERE id=?");
+  qry.bind(1, r.id);
+  for (auto v: qry)
+    {
+      // only one entry is expected
+      v.getter() >> r.phone >> r.website;
+      return;
+    }
+}
+
+
 bool Geocoder::get_id_range(std::string &v, bool full_range, index_id_value range0, index_id_value range1,
                             index_id_value* *idx0, index_id_value* *idx1)
 {
@@ -555,6 +569,7 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
 
         get_name(r.id, r.title, r.address, r.admin_levels, m_levels_in_title);
         r.type = get_type(r.id);
+        get_features(r);
 
         r.latitude = lat;
         r.longitude = lon;
@@ -759,6 +774,7 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
         
               get_name(r.id, r.title, r.address, r.admin_levels, m_levels_in_title);
               r.type = get_type(r.id);
+              get_features(r);
         
               r.latitude = lat;
               r.longitude = lon;

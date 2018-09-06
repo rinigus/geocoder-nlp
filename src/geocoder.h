@@ -25,6 +25,8 @@ namespace GeoNLP {
       std::string title;
       std::string address;
       std::string type;
+      std::string phone;
+      std::string website;
       size_t levels_resolved;
       size_t admin_levels=0;
 
@@ -163,6 +165,8 @@ namespace GeoNLP {
     void get_name(long long int id, std::string &title, std::string &full, size_t &admin_levels, int levels_in_title);
 
     std::string get_type(long long int id);
+
+    void get_features(GeoResult &r);
 
     virtual bool check_version();
 
