@@ -198,20 +198,24 @@ bool Postal::init()
 {
   if (m_initialized) return true;
 
+  // used for transliteration and basic setup
   if ( (m_postal_datadir_global.empty() && !libpostal_setup() ) ||
        (!m_postal_datadir_global.empty() && !libpostal_setup_datadir(m_postal_datadir_global.data())) )
     return false;
 
-  if ( m_postal_languages.empty() )
+  if (m_use_postal)
     {
-      if ( (m_postal_datadir_global.empty() && !libpostal_setup_language_classifier() ) ||
-	   (!m_postal_datadir_global.empty() && !libpostal_setup_language_classifier_datadir(m_postal_datadir_global.data())) )
-	return false;
-    }
+      if ( m_postal_languages.empty() )
+        {
+          if ( (m_postal_datadir_global.empty() && !libpostal_setup_language_classifier() ) ||
+               (!m_postal_datadir_global.empty() && !libpostal_setup_language_classifier_datadir(m_postal_datadir_global.data())) )
+            return false;
+        }
 
-  if ( (m_postal_datadir_country.empty() && !libpostal_setup_parser() ) ||
-       (!m_postal_datadir_country.empty() && !libpostal_setup_parser_datadir(m_postal_datadir_country.data())) )
-    return false;
+      if ( (m_postal_datadir_country.empty() && !libpostal_setup_parser() ) ||
+           (!m_postal_datadir_country.empty() && !libpostal_setup_parser_datadir(m_postal_datadir_country.data())) )
+        return false;
+    }
 
   m_initialized = true;
   return true;
