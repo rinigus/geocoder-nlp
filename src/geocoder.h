@@ -26,6 +26,7 @@ namespace GeoNLP {
       std::string address;
       std::string type;
       std::string phone;
+      std::string postal_code;
       std::string website;
       size_t levels_resolved;
       size_t admin_levels=0;
@@ -159,11 +160,14 @@ namespace GeoNLP {
                                double reference_latitude, double reference_longitude);
 
   protected:
-    bool search(const Postal::Hierarchy &parsed, std::vector<GeoResult> &result, size_t level=0,
+    bool search(const Postal::Hierarchy &parsed, const std::string &postal_code,
+                std::vector<GeoResult> &result, size_t level=0,
                 long long int range0=0, long long int range1=0);
 
     void get_name(long long int id, std::string &title, std::string &full, size_t &admin_levels, int levels_in_title);
 
+    std::string get_postal_code(long long int id);
+    
     std::string get_type(long long int id);
 
     void get_features(GeoResult &r);

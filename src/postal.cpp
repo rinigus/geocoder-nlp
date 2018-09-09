@@ -21,7 +21,7 @@ using namespace GeoNLP;
 #define ADDRESS_PARSER_LABEL_ISLAND "island"
 #define ADDRESS_PARSER_LABEL_STATE_DISTRICT  "state_district"
 #define ADDRESS_PARSER_LABEL_STATE  "state"
-#define ADDRESS_PARSER_LABEL_POSTAL_CODE  "postal_code"
+#define ADDRESS_PARSER_LABEL_POSTAL_CODE  "postcode"
 #define ADDRESS_PARSER_LABEL_COUNTRY_REGION "country_region"
 #define ADDRESS_PARSER_LABEL_COUNTRY  "country"
 
@@ -38,14 +38,14 @@ static void str2vecchar(const std::string &s, std::vector<char> &v)
 // trim from start
 static inline std::string &ltrim(std::string &s) {
   s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-				  std::not1(std::ptr_fun<int, int>(std::isspace))));
+                                  std::not1(std::ptr_fun<int, int>(std::isspace))));
   return s;
 }
 
 // trim from end
 static inline std::string &rtrim(std::string &s) {
   s.erase(std::find_if(s.rbegin(), s.rend(),
-		       std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
+                       std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
   return s;
 }
 
@@ -87,8 +87,8 @@ static std::string primitive_key(size_t ind)
 // typedef std::vector<Digits> Vd;
 
 // static void cart_product(
-// 			 Vvi& out,
-// 			 Vvi& in)
+//                       Vvi& out,
+//                       Vvi& in)
 
 // {
 //   Vd vd;
@@ -108,8 +108,8 @@ static std::string primitive_key(size_t ind)
 //     // out the element of each vector via the iterator.
 //     Vi result;
 //     for(Vd::const_iterator it = vd.begin();
-// 	it != vd.end();
-// 	it++) {
+//      it != vd.end();
+//      it++) {
 //       result.push_back(*(it->me));
 //     }
 //     out.push_back(result);
@@ -124,17 +124,17 @@ static std::string primitive_key(size_t ind)
 //       // okay, I started at the left instead. sue me
 //       ++(it->me);
 //       if(it->me == it->end) {
-// 	if(it+1 == vd.end()) {
-// 	  // I'm the last digit, and I'm about to roll
-// 	  return;
-// 	} else {
-// 	  // cascade
-// 	  it->me = it->begin;
-// 	  ++it;
-// 	}
+//      if(it+1 == vd.end()) {
+//        // I'm the last digit, and I'm about to roll
+//        return;
+//      } else {
+//        // cascade
+//        it->me = it->begin;
+//        ++it;
+//      }
 //       } else {
-// 	// normal
-// 	break;
+//      // normal
+//      break;
 //       }
 //     }
 //   }
@@ -310,14 +310,14 @@ bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &r
 
       if (!hier.empty())
         {
-	  ParseResult prim;
-	  for (size_t j = 0; j < hier.size(); j++)
+          ParseResult prim;
+          for (size_t j = 0; j < hier.size(); j++)
             {
               std::vector<std::string> pc; pc.push_back(hier[hier.size()-j-1]);
               prim[ primitive_key(j) ] = pc;
             }
 
-	  expand(prim, result);
+          expand(prim, result);
         }
     }
 
@@ -353,16 +353,20 @@ void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseR
       // in practice, its only one element at ParseResult at this stage
       for (const std::string tonorm: i.second)
         {
-          charbuff.resize(tonorm.length() + 1);
-          std::copy(tonorm.c_str(), tonorm.c_str() + tonorm.length() + 1, charbuff.begin());
-
-          char **expansions = libpostal_expand_address(charbuff.data(), options_norm, &num_expansions);
           std::vector< std::string > norm;
-          for (size_t j = 0; j < num_expansions; j++)
-            norm.push_back(expansions[j]);
+          // no need to keep postal code in normalized and expanded
+          if (i.first == ADDRESS_PARSER_LABEL_POSTAL_CODE)
+            norm.push_back(tonorm);
+          else
+            {
+              charbuff.resize(tonorm.length() + 1);
+              std::copy(tonorm.c_str(), tonorm.c_str() + tonorm.length() + 1, charbuff.begin());
+              char **expansions = libpostal_expand_address(charbuff.data(), options_norm, &num_expansions);
+              for (size_t j = 0; j < num_expansions; j++)
+                norm.push_back(expansions[j]);
 
-          libpostal_expansion_array_destroy(expansions, num_expansions);
-
+              libpostal_expansion_array_destroy(expansions, num_expansions);
+            }
           address_expansions.push_back(norm);
           address_keys.push_back(i.first);
         }
@@ -405,7 +409,33 @@ void Postal::expand_string(const std::string &input, std::vector<std::string> &e
   libpostal_expansion_array_destroy(expansions_cstr, num_expansions);
 }
 
-void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hierarchy> &h)
+std::string Postal::normalize_postalcode(const std::string &postal_code)
+{
+  // According to https://en.wikipedia.org/wiki/Postal_code
+  // postal codes use
+  //  - The Arabic numerals "0" to "9"
+  //  - Letters of the ISO basic Latin alphabet
+  //  - Spaces, hyphens
+  //
+  // So, simple normalization can be used. Here, its uppercased and double
+  // spaces are removed.
+
+  std::string normalized;
+  for (auto i: postal_code)
+    {
+      char c = std::toupper(i);
+      if ( (normalized.empty() || normalized.back() != ' ') || c != ' ' )
+        normalized.push_back(c);
+    }
+
+  // trim a single possible space at the end
+  if (!normalized.empty() && normalized.back() == ' ')
+    normalized.pop_back();
+
+  return normalized;
+}
+
+void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hierarchy> &h, std::string &postal_code)
 {
   h.clear();
   for (const ParseResult &r: p)
@@ -426,17 +456,24 @@ void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hie
       ADDIFHAS(ADDRESS_PARSER_LABEL_CATEGORY);
       ADDIFHAS(ADDRESS_PARSER_LABEL_HOUSE);
 
+      if (postal_code.empty())
+        {
+          ParseResult::const_iterator it = r.find(ADDRESS_PARSER_LABEL_POSTAL_CODE);
+          if (it != r.end() && it->second.size())
+            postal_code = normalize_postalcode(it->second[0]);
+        }
+
       // test if its primitive expansion result
       if (h_result.empty())
         {
-	  bool done = false;
-	  for (size_t i=0; !done; ++i)
+          bool done = false;
+          for (size_t i=0; !done; ++i)
             {
-	      ParseResult::const_iterator it = r.find(primitive_key(i));
-	      if (it == r.end())
-		done = true;
-	      else
-		h_result.push_back(it->second);
+              ParseResult::const_iterator it = r.find(primitive_key(i));
+              if (it == r.end())
+                done = true;
+              else
+                h_result.push_back(it->second);
             }
         }
 

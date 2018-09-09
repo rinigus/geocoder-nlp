@@ -35,7 +35,7 @@
 
 #define MAX_COMMAS 10 /// maximal number of commas allowed in a name
 
-#define TEMPORARY //"TEMPORARY" // set to empty if need to debug import
+#define TEMPORARY "TEMPORARY" // set to empty if need to debug import
 
 typedef long long int sqlid; /// type used by IDs in SQLite
 
@@ -157,12 +157,14 @@ void GetObjectTypeCoor( const osmscout::DatabaseRef& database,
 typedef osmscout::FeatureValueReader<osmscout::NameAltFeature,osmscout::NameAltFeatureValue> NameAltReader;
 typedef osmscout::FeatureValueReader<osmscout::NameFeature,osmscout::NameFeatureValue> NameReader;
 typedef osmscout::FeatureValueReader<osmscout::PhoneFeature,osmscout::PhoneFeatureValue> PhoneReader;
+typedef osmscout::FeatureValueReader<osmscout::PostalCodeFeature,osmscout::PostalCodeFeatureValue> PostalCodeReader;
 typedef osmscout::FeatureValueReader<osmscout::WebsiteFeature,osmscout::WebsiteFeatureValue> WebsiteReader;
 NameAltReader *nameAltReader{NULL};
 NameReader *nameReader{NULL};
 PhoneReader *phoneReader{NULL};
+PostalCodeReader *postalCodeReader{NULL};
 WebsiteReader *websiteReader{NULL};
-void GetFeatures(const osmscout::FeatureValueBuffer &features, std::string &name, std::string &name_en, std::string &phone, std::string &website)
+void GetFeatures(const osmscout::FeatureValueBuffer &features, std::string &name, std::string &name_en, std::string &phone, std::string &postal_code, std::string &website)
 {
   osmscout::NameFeatureValue *nameValue=nameReader->GetValue(features);
   if (nameValue != NULL)
@@ -176,6 +178,10 @@ void GetFeatures(const osmscout::FeatureValueBuffer &features, std::string &name
   if (phoneValue != NULL)
     phone = phoneValue->GetPhone();
 
+  osmscout::PostalCodeFeatureValue *postalCodeValue=postalCodeReader->GetValue(features);
+  if (postalCodeValue != NULL)
+    postal_code = GeoNLP::Postal::normalize_postalcode(postalCodeValue->GetPostalCode());
+
   osmscout::WebsiteFeatureValue *websiteValue=websiteReader->GetValue(features);
   if (websiteValue != NULL)
     website = websiteValue->GetWebsite();
@@ -186,15 +192,26 @@ void GetObjectFeatures( const osmscout::DatabaseRef& database,
                         std::string &name,
                         std::string &name_en,
                         std::string &phone,
-                        std::string &website )
+                        std::string &postal_code,
+                        std::string &website,
+                        bool reset = false )
 {
+  if (reset)
+    {
+      name = std::string();
+      name_en = std::string();
+      phone = std::string();
+      postal_code = std::string();
+      website = std::string();
+    }
+
   if (object.GetType()==osmscout::RefType::refNode)
     {
       osmscout::NodeRef node;
 
       if (database->GetNodeByOffset(object.GetFileOffset(),
                                     node))
-        GetFeatures(node->GetFeatureValueBuffer(), name, name_en, phone, website);
+        GetFeatures(node->GetFeatureValueBuffer(), name, name_en, phone, postal_code, website);
     }
   else if (object.GetType()==osmscout::RefType::refArea)
     {
@@ -202,7 +219,7 @@ void GetObjectFeatures( const osmscout::DatabaseRef& database,
 
       if (database->GetAreaByOffset(object.GetFileOffset(),
                                     area))
-        GetFeatures(area->GetFeatureValueBuffer(), name, name_en, phone, website);
+        GetFeatures(area->GetFeatureValueBuffer(), name, name_en, phone, postal_code, website);
     }
   else if (object.GetType()==osmscout::RefType::refWay)
     {
@@ -210,7 +227,7 @@ void GetObjectFeatures( const osmscout::DatabaseRef& database,
 
       if (database->GetWayByOffset(object.GetFileOffset(),
                                    way))
-        GetFeatures(way->GetFeatureValueBuffer(), name, name_en, phone, website);
+        GetFeatures(way->GetFeatureValueBuffer(), name, name_en, phone, postal_code, website);
     }
 }
 
@@ -246,6 +263,7 @@ public:
     std::string name;
     std::string name_en;
     std::string phone;
+    std::string postal_code = GeoNLP::Postal::normalize_postalcode(postalArea.name);
     std::string website;
     osmscout::GeoCoord coordinates;
     std::string scoutid = address.object.GetName();
@@ -265,15 +283,16 @@ public:
     GetObjectTypeCoor(m_database, address.object, type, coordinates);
     id = IDs.next();
 
-    GetObjectFeatures(m_database, address.object, name, name_en, phone, website);
+    GetObjectFeatures(m_database, address.object, name, name_en, phone, postal_code, website);
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, phone, postal_code, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << scoutid
                  << address.name
                  << name
                  << name_en
                  << phone
+                 << postal_code
                  << website
                  << m_parent
                  << coordinates.GetLon()
@@ -310,6 +329,7 @@ public:
     std::string name;
     std::string name_en;
     std::string phone;
+    std::string postal_code;
     std::string website;
     osmscout::GeoCoord coordinates;
     std::string scoutid = poi.object.GetName();
@@ -325,7 +345,7 @@ public:
 
     // allow POIs without name only if they are of white-listed types
     GetObjectTypeCoor(m_database, poi.object, type, coordinates);
-    GetObjectFeatures(m_database, poi.object, name, name_en, phone, website);
+    GetObjectFeatures(m_database, poi.object, name, name_en, phone, postal_code, website);
 
     if (name.empty() && m_poi_types_whitelist.count(type) == 0)
       return true;
@@ -335,13 +355,14 @@ public:
 
     id = IDs.next();
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, scoutid, name, name_extra, name_en, phone, postal_code, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << scoutid
                  << poi.name
                  << name
                  << name_en
                  << phone
+                 << postal_code
                  << website
                  << m_parent
                  << coordinates.GetLon()
@@ -378,6 +399,7 @@ public:
     std::string name;
     std::string name_en;
     std::string phone;
+    std::string postal_code = GeoNLP::Postal::normalize_postalcode(postalArea.name);
     std::string website;
     osmscout::GeoCoord coordinates;
     sqlid id;
@@ -393,14 +415,15 @@ public:
     locID = id = IDs.next();
     IDs.set_id(location.locationOffset, id);
 
-    GetObjectFeatures(m_database, location.objects[ location.objects.size()/2 ], name, name_en, phone, website);
+    GetObjectFeatures(m_database, location.objects[ location.objects.size()/2 ], name, name_en, phone, postal_code, website);
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, postal_code, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << location.name
                  << name
                  << name_en
                  << phone
+                 << postal_code
                  << website
                  << m_parent
                  << coordinates.GetLon()
@@ -442,6 +465,7 @@ public:
     std::string name;
     std::string name_en;
     std::string phone;
+    std::string postal_code;
     std::string website;
     osmscout::GeoCoord coordinates;
     sqlid id;
@@ -451,14 +475,15 @@ public:
     regionID = id = IDs.next();
     IDs.set_id(region.regionOffset, id);
 
-    GetObjectFeatures(m_database, region.object, name, name_en, phone, website);
+    GetObjectFeatures(m_database, region.object, name, name_en, phone, postal_code, website);
 
-    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, postal_code, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << id
                  << region.name
                  << name
                  << name_en
                  << phone
+                 << postal_code
                  << website
                  << IDs.get_id(region.parentRegionOffset)
                  << coordinates.GetLon()
@@ -477,18 +502,19 @@ public:
              saved_names.end(),
              region.aliasName) != saved_names.end() )
       {
-        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, postal_code, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         GetObjectTypeCoor(m_database, region.aliasObject, type, coordinates);
         id = IDs.next();
 
-        GetObjectFeatures(m_database, region.aliasObject, name, name_en, phone, website);
+        GetObjectFeatures(m_database, region.aliasObject, name, name_en, phone, postal_code, website, true);
 
         cmd.binder() << id
                      << region.aliasName
                      << name
                      << name_en
                      << phone
+                     << postal_code
                      << website
                      << IDs.get_id(region.parentRegionOffset)
                      << coordinates.GetLon()
@@ -502,19 +528,20 @@ public:
 
     for (auto alias: region.aliases)
       {
-        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, name, name_extra, name_en, phone, postal_code, website, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
 
         osmscout::ObjectFileRef object(alias.objectOffset, osmscout::refNode);
         GetObjectTypeCoor(m_database, object, type, coordinates);
         id = IDs.next();
 
-        GetObjectFeatures(m_database, object, name, name_en, phone, website);
+        GetObjectFeatures(m_database, object, name, name_en, phone, postal_code, website, true);
 
         cmd.binder() << id
                      << alias.name
                      << name
                      << name_en
                      << phone
+                     << postal_code
                      << website
                      << regionID
                      << coordinates.GetLon()
@@ -528,7 +555,9 @@ public:
 
     LocVisitor loc(m_database, m_db, regionID);
     for (const osmscout::PostalArea &parea: region.postalAreas)
-      m_database->GetLocationIndex()->VisitLocations(region, parea, loc, false);
+      {
+        m_database->GetLocationIndex()->VisitLocations(region, parea, loc, false);
+      }
 
     PoiVisitor poi(m_database, m_db, regionID);
     m_database->GetLocationIndex()->VisitPOIs(region, poi, false);
@@ -778,11 +807,13 @@ void normalized_to_final(sqlite3pp::database& db, std::string path)
     for (auto a: bdata)
       keys.push_back( GeoNLP::Geocoder::make_id_key(a.first) );
 
-    std::sort( keys.begin(), keys.end() );;
+    std::sort( keys.begin(), keys.end() );
 
     for (auto key: keys)
       {
-        std::string value = GeoNLP::Geocoder::make_id_value( bdata[GeoNLP::Geocoder::get_id_key(key)] );
+        std::vector<GeoNLP::Geocoder::index_id_value> &d = bdata[GeoNLP::Geocoder::get_id_key(key)];
+        std::sort(d.begin(), d.end());
+        std::string value = GeoNLP::Geocoder::make_id_value( d );
         if (!db.set(key, value))
           {
             std::cerr << "set error: " << db.error().name() << std::endl;
@@ -885,6 +916,7 @@ int main(int argc, char* argv[])
   nameReader = new NameReader(*database->GetTypeConfig());
   nameAltReader = new NameAltReader(*database->GetTypeConfig());
   phoneReader = new PhoneReader(*database->GetTypeConfig());
+  postalCodeReader = new PostalCodeReader(*database->GetTypeConfig());
   websiteReader = new WebsiteReader(*database->GetTypeConfig());
 
   sqlite3pp::database db(GeoNLP::Geocoder::name_primary(database_path).c_str());
@@ -904,7 +936,7 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
   db.execute( "DROP TABLE IF EXISTS object_primary_rtree" );
 
-  db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, scoutid TEXT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, website TEXT, parent INTEGER, latitude REAL, longitude REAL)");
+  db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, scoutid TEXT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, latitude REAL, longitude REAL)");
   db.execute( "CREATE " TEMPORARY " TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
               "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
@@ -927,11 +959,11 @@ int main(int argc, char* argv[])
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
   db.execute( "INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp" );
   db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-              "name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, website TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
+              "name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
               "FOREIGN KEY (type_id) REFERENCES type(id))");
 
-  db.execute( "INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, phone, website, parent, type_id, latitude, longitude, boxstr) "
-              "SELECT p.id, p.name, p.name_extra, p.name_en, p.phone, p.website, p.parent, type.id, p.latitude, p.longitude, "
+  db.execute( "INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, phone, postal_code, website, parent, type_id, latitude, longitude, boxstr) "
+              "SELECT p.id, p.name, p.name_extra, p.name_en, p.phone, p.postal_code, p.website, p.parent, type.id, p.latitude, p.longitude, "
               // LINE BELOW DETERMINES ROUNDING USED FOR BOXES
               "CAST(CAST(p.latitude*100 AS INTEGER) AS TEXT) || ',' || CAST(CAST(p.longitude*100 AS INTEGER) AS TEXT) "
               "FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
@@ -940,14 +972,17 @@ int main(int argc, char* argv[])
   db.execute( "CREATE " TEMPORARY " TABLE boxids (id INTEGER PRIMARY KEY AUTOINCREMENT, boxstr TEXT, CONSTRAINT struni UNIQUE (boxstr))" );
   db.execute( "INSERT INTO boxids (boxstr) SELECT DISTINCT boxstr FROM object_primary_tmp2" );
 
-  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, website TEXT, "
+  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, "
               "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
               "FOREIGN KEY (type_id) REFERENCES type(id))" );
-  db.execute( "INSERT INTO object_primary (id, name, name_extra, name_en, phone, website, parent, type_id, latitude, longitude, box_id) "
-              "SELECT o.id, name, name_extra, name_en, phone, website, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
+  db.execute( "INSERT INTO object_primary (id, name, name_extra, name_en, phone, postal_code, website, parent, type_id, latitude, longitude, box_id) "
+              "SELECT o.id, name, name_extra, name_en, phone, postal_code, website, parent, type_id, latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr" );
 
   db.execute( "DROP INDEX IF EXISTS idx_object_primary_box" );
   db.execute( "CREATE INDEX idx_object_primary_box ON object_primary (box_id)" );
+
+  db.execute( "DROP INDEX IF EXISTS idx_object_primary_postal_code" );
+  db.execute( "CREATE INDEX idx_object_primary_postal_code ON object_primary (postal_code)" );
 
   std::cout << "Normalize using libpostal" << std::endl;
 

@@ -16,7 +16,8 @@ namespace GeoNLP {
     typedef std::map< std::string, std::vector<std::string> > ParseResult;
     typedef std::vector< std::vector<std::string> > Hierarchy;
 
-    static void result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hierarchy> &h);
+    static std::string normalize_postalcode(const std::string &postal_code);
+    static void result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hierarchy> &h, std::string &postal_code);
 
     /// \brief Parse and normalize input string
     ///
