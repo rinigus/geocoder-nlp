@@ -441,7 +441,14 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, siz
   for (auto v: qry)
     {
       // only one entry is expected
-      v.getter() >> name >> name_extra >> name_en >> parent;
+      {
+        // to allow NULL readouts from the database
+        char const *n, *ne, *neng;
+        v.getter() >> n >> ne >> neng >> parent;
+        if (n) name = n;
+        if (ne) name_extra = ne;
+        if (neng) name_en = neng;
+      }
 
       if (name.empty()) name=" ";
 
@@ -469,7 +476,7 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, siz
 
 std::string Geocoder::get_postal_code(long long id)
 {
-  std::string postal_code;
+  char const *postal_code = nullptr;
 
   sqlite3pp::query qry(m_db, "SELECT postal_code FROM object_primary WHERE id=?");
   qry.bind(1, id);
@@ -480,7 +487,7 @@ std::string Geocoder::get_postal_code(long long id)
       break;
     }
 
-  return postal_code;
+  return postal_code ? postal_code : std::string();
 }
 
 
@@ -511,7 +518,11 @@ void Geocoder::get_features(GeoResult &r)
   for (auto v: qry)
     {
       // only one entry is expected
-      v.getter() >> r.phone >> r.postal_code >> r.website;
+      char const *phone, *postal, *web;
+      v.getter() >> phone >> postal >> web;
+      r.phone = (phone ? phone : "");
+      r.postal_code = (postal ? postal : "");
+      r.website = (web ? web : "");
       return;
     }
 }
@@ -593,7 +604,8 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
     for (auto v: qry)
       {
         long long id;
-        std::string name, name_extra, name_en, type;
+        char const  *name, *name_extra, *name_en;
+        std::string type;
         double lat, lon, distance;
         v.getter() >> id >> name >> name_extra >> name_en >> type >> lat >> lon;
 
@@ -612,9 +624,9 @@ bool Geocoder::search_nearby( const std::vector< std::string > &name_query,
           {
             bool found = false;
             std::set<std::string> names;
-            names.insert(name);
-            names.insert(name_extra);
-            names.insert(name_en);
+            if (name) names.insert(name);
+            if (name_extra) names.insert(name_extra);
+            if (name_en) names.insert(name_en);
             for (auto n = names.begin(); n!=names.end() && !found; ++n)
               {
                 if (n->empty()) continue;
@@ -771,7 +783,8 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
           for (auto v: qry)
             {
               long long id;
-              std::string name, name_extra, name_en, type;
+              char const *name, *name_extra, *name_en;
+              std::string type;
               double lat, lon, distance;
               v.getter() >> id >> name >> name_extra >> name_en >> type >> lat >> lon;
 
@@ -817,9 +830,9 @@ bool Geocoder::search_nearby(const std::vector< std::string > &name_query,
                 {
                   bool found = false;
                   std::set<std::string> names;
-                  names.insert(name);
-                  names.insert(name_extra);
-                  names.insert(name_en);
+                  if (name) names.insert(name);
+                  if (name_extra) names.insert(name_extra);
+                  if (name_en) names.insert(name_en);
                   for (auto n = names.begin(); n!=names.end() && !found; ++n)
                     {
                       if (n->empty()) continue;
