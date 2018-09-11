@@ -7,6 +7,7 @@
 #include <osmscout/LocationService.h>
 #include <osmscout/TypeFeatures.h>
 #include <osmscout/FeatureReader.h>
+#include <osmscout/LocationDescriptionService.h>
 
 #include "geocoder.h"
 
@@ -23,6 +24,8 @@
 #include <fstream>
 #include <algorithm>
 #include <locale>
+
+#include <boost/tokenizer.hpp>
 
 #define MAX_NUMBER_OF_EXPANSIONS 85 /// if there are more expansions
                                     /// that specified, this object
@@ -109,6 +112,16 @@ protected:
 ////////////////////////////////////////////////////////////////
 /// Global variable tracking IDs and administrative relationship
 IDTracker IDs;
+
+//////////////////////////////////////////////////////////////
+/// Additional postal codes
+
+struct PostalCode {
+  std::string code;
+  double latitude, longitude;
+};
+
+std::map< osmscout::FileOffset, std::vector<PostalCode> > additional_postal_codes;
 
 //////////////////////////////////////////////////////////////
 /// libosmscout helper functions
@@ -562,6 +575,27 @@ public:
     PoiVisitor poi(m_database, m_db, regionID);
     m_database->GetLocationIndex()->VisitPOIs(region, poi, false);
 
+    // Add extra postal codes
+    osmscout::FileOffset rid = region.object.GetFileOffset();
+    if (additional_postal_codes.count(rid) > 0)
+      {
+        const auto &v = additional_postal_codes.at(rid);
+        for (auto c: v)
+          {
+            sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, postal_code, longitude, latitude) VALUES (?, ?, ?, ?)");
+            id = IDs.next();
+            cmd.binder() << id
+                         << c.code
+                         << c.longitude
+                         << c.latitude;
+            if (cmd.execute() != SQLITE_OK)
+              std::cerr << "Error inserting additional postal code " << c.code << "\n";
+
+            write_type(m_db, id, "postal code");
+            IDs.set_parent(id, regionID);
+          }
+      }
+
     return osmscout::AdminRegionVisitor::visitChildren;
   };
 
@@ -586,17 +620,17 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
     {
       tonorm d;
       sqlid id;
-      std::string name, name_extra, name_en;
+      char const *name, *name_extra, *name_en;
       v.getter() >> id >> name >> name_extra >> name_en;
 
-      if (name.empty())
+      if (name == nullptr)
         continue; // no need to add empty name into search index
 
       d.id = id;
 
       d.name = name; data.push_back(d);
-      if (!name_extra.empty()) { d.name = name_extra; data.push_back(d); }
-      if (!name_en.empty()) { d.name = name_en; data.push_back(d); }
+      if (name_extra) { d.name = name_extra; data.push_back(d); }
+      if (name_en) { d.name = name_en; data.push_back(d); }
     }
 
   // make a new table for normalized names
@@ -866,7 +900,7 @@ int main(int argc, char* argv[])
 
   if (argc<4)
     {
-      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> <whitelist file> [<postal_country_parser_code>] [address_parser_directory] [verbose]\n";
+      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> <whitelist file> [postal_codes.csv] [<postal_country_parser_code>] [address_parser_directory] [verbose]\n";
       std::cerr << "When using optional parameters, you have to specify all of the perceiving ones\n";
       return 1;
     }
@@ -874,13 +908,15 @@ int main(int argc, char* argv[])
   std::string map = argv[1];
   std::string database_path = argv[2];
   std::string whitelist_file = argv[3];
+  std::string postcodes_fname;
   std::string postal_country_parser;
   std::string postal_address_parser_dir;
   bool verbose_address_expansion = false;
 
-  if (argc > 4) postal_country_parser = argv[4];
-  if (argc > 5) postal_address_parser_dir = argv[5];
-  if (argc > 6 && strcmp("verbose", argv[6])==0 ) verbose_address_expansion = true;
+  if (argc > 4) postcodes_fname = argv[4];
+  if (argc > 5) postal_country_parser = argv[5];
+  if (argc > 6) postal_address_parser_dir = argv[6];
+  if (argc > 7 && strcmp("verbose", argv[7])==0 ) verbose_address_expansion = true;
 
   std::cout << "Starting import: " << map << " -> " << database_path << "\n";
 
@@ -919,6 +955,54 @@ int main(int argc, char* argv[])
   postalCodeReader = new PostalCodeReader(*database->GetTypeConfig());
   websiteReader = new WebsiteReader(*database->GetTypeConfig());
 
+  // reverse geocode all postal codes submitted as a separate file
+  if (!postcodes_fname.empty())
+    {
+      std::ifstream fin(postcodes_fname.c_str());
+      osmscout::LocationDescriptionService locationService(database);
+      std::string line;
+      while (getline(fin,line))
+        {
+          boost::tokenizer< boost::escaped_list_separator<char> > tok(line);
+          std::vector<std::string> cells;
+          cells.assign(tok.begin(),tok.end());
+          if (cells.size() != 4 || cells[0] == "id")
+            continue;
+          std::string code = cells[1];
+          double latitude = std::stod(cells[2]);
+          double longitude = std::stod(cells[3]);
+          osmscout::GeoCoord coordinates(latitude, longitude);
+          std::list<osmscout::LocationDescriptionService::ReverseLookupResult> results;
+          {
+            static int o = 0;
+            if (o % 1000 == 0) {
+              std::cout << "." << std::flush;
+              o = 1;
+            }
+            ++o;
+          }
+          if (locationService.ReverseLookupRegion(coordinates, results))
+            if (results.size() > 0)
+              {
+                const auto r = results.back();
+                if (r.adminRegion)
+                  {
+                    osmscout::FileOffset admin = r.adminRegion->object.GetFileOffset();
+                    PostalCode c;
+                    c.code = GeoNLP::Postal::normalize_postalcode(code);
+                    c.latitude = latitude;
+                    c.longitude = longitude;
+                    additional_postal_codes[admin].push_back(c);
+                    std::cout << code << " " << r.adminRegion->name << " " << r.adminRegion->object.GetFileOffset() << " " << r.adminRegion->parentRegionOffset << " " << results.size() << "\n";
+                  }
+              }
+        }
+    }
+  //return -1;
+
+  // reverse geocoding: done
+
+
   sqlite3pp::database db(GeoNLP::Geocoder::name_primary(database_path).c_str());
 
   db.execute( "PRAGMA journal_mode = OFF" );
@@ -936,7 +1020,7 @@ int main(int argc, char* argv[])
   db.execute( "DROP TABLE IF EXISTS hierarchy" );
   db.execute( "DROP TABLE IF EXISTS object_primary_rtree" );
 
-  db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, scoutid TEXT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, latitude REAL, longitude REAL)");
+  db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp (id INTEGER PRIMARY KEY AUTOINCREMENT, scoutid TEXT, name TEXT, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, latitude REAL, longitude REAL)");
   db.execute( "CREATE " TEMPORARY " TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))" );
   db.execute( "CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
               "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) REFERENCES objects_primary(id))" );
@@ -959,7 +1043,7 @@ int main(int argc, char* argv[])
   db.execute( "CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)" );
   db.execute( "INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp" );
   db.execute( "CREATE " TEMPORARY " TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-              "name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
+              "name TEXT, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
               "FOREIGN KEY (type_id) REFERENCES type(id))");
 
   db.execute( "INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, phone, postal_code, website, parent, type_id, latitude, longitude, boxstr) "
@@ -972,7 +1056,7 @@ int main(int argc, char* argv[])
   db.execute( "CREATE " TEMPORARY " TABLE boxids (id INTEGER PRIMARY KEY AUTOINCREMENT, boxstr TEXT, CONSTRAINT struni UNIQUE (boxstr))" );
   db.execute( "INSERT INTO boxids (boxstr) SELECT DISTINCT boxstr FROM object_primary_tmp2" );
 
-  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, "
+  db.execute( "CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, "
               "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
               "FOREIGN KEY (type_id) REFERENCES type(id))" );
   db.execute( "INSERT INTO object_primary (id, name, name_extra, name_en, phone, postal_code, website, parent, type_id, latitude, longitude, box_id) "
