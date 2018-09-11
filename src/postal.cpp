@@ -9,6 +9,8 @@
 #include <cctype>
 #include <locale>
 
+#include <string.h>
+
 using namespace GeoNLP;
 
 #define ADDRESS_PARSER_LABEL_HOUSE "house"
@@ -24,6 +26,8 @@ using namespace GeoNLP;
 #define ADDRESS_PARSER_LABEL_POSTAL_CODE  "postcode"
 #define ADDRESS_PARSER_LABEL_COUNTRY_REGION "country_region"
 #define ADDRESS_PARSER_LABEL_COUNTRY  "country"
+
+#define PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE "post:"
 
 //////////////////////////////////////////////////////////////////////
 /// Helper string functions
@@ -311,10 +315,21 @@ bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &r
       if (!hier.empty())
         {
           ParseResult prim;
+          int shift = 0;
+          size_t np = strlen(PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE);
           for (size_t j = 0; j < hier.size(); j++)
             {
-              std::vector<std::string> pc; pc.push_back(hier[hier.size()-j-1]);
-              prim[ primitive_key(j) ] = pc;
+              std::string v = hier[hier.size()-j-1];
+              std::string key = primitive_key(j-shift);
+              if (v.compare(0, np, PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE) == 0)
+                {
+                  v = v.substr(np+1);
+                  v = trim(v);
+                  key = PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE;
+                  shift += 1;
+                }
+              std::vector<std::string> pc; pc.push_back(v);
+              prim[key] = pc;
             }
 
           expand(prim, result);
