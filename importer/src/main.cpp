@@ -961,6 +961,7 @@ int main(int argc, char* argv[])
       std::ifstream fin(postcodes_fname.c_str());
       osmscout::LocationDescriptionService locationService(database);
       std::string line;
+      size_t postal_counter=0;
       while (getline(fin,line))
         {
           boost::tokenizer< boost::escaped_list_separator<char> > tok(line);
@@ -975,11 +976,12 @@ int main(int argc, char* argv[])
           std::list<osmscout::LocationDescriptionService::ReverseLookupResult> results;
           {
             static int o = 0;
-            if (o % 1000 == 0) {
-              std::cout << "." << std::flush;
-              o = 1;
+            if (o % 10000 == 0) {
+              std::cout << "Postal codes parsed: " << postal_counter << std::endl;
+              o = 0;
             }
             ++o;
+            ++postal_counter;
           }
           if (locationService.ReverseLookupRegion(coordinates, results))
             if (results.size() > 0)
@@ -993,7 +995,9 @@ int main(int argc, char* argv[])
                     c.latitude = latitude;
                     c.longitude = longitude;
                     additional_postal_codes[admin].push_back(c);
-                    std::cout << code << " " << r.adminRegion->name << " " << r.adminRegion->object.GetFileOffset() << " " << r.adminRegion->parentRegionOffset << " " << results.size() << "\n";
+                    // std::cout << code << " " << r.adminRegion->name << " "
+                    //           << r.adminRegion->object.GetFileOffset() << " " << r.adminRegion->parentRegionOffset << " "
+                    //           << results.size() << "\n";
                   }
               }
         }
