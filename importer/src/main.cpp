@@ -970,8 +970,15 @@ int main(int argc, char* argv[])
           if (cells.size() != 4 || cells[0] == "id")
             continue;
           std::string code = cells[1];
-          double latitude = std::stod(cells[2]);
-          double longitude = std::stod(cells[3]);
+          double latitude, longitude;
+          try {
+            latitude = std::stod(cells[2]);
+            longitude = std::stod(cells[3]);
+          }
+          catch (const std::invalid_argument &e) {
+            continue; // skip this line, it probably doesn't have coordinates
+          }
+          
           osmscout::GeoCoord coordinates(latitude, longitude);
           std::list<osmscout::LocationDescriptionService::ReverseLookupResult> results;
           {
