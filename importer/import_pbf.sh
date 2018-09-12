@@ -16,9 +16,13 @@ elif [ "$#" -eq 2 ]; then
     D=${2}
 elif [ "$#" -eq 3 ]; then
     D=${2}
-    POSTAL=${3}
+    EXTRA_POST=${3}
+elif [ "$#" -eq 4 ]; then
+    D=${2}
+    EXTRA_POST=${3}
+    POSTAL=${4}
 else
-    echo "Usage: ./import_pbf.sh openstreetmapfilename [imported-dir-name]"
+    echo "Usage: ./import_pbf.sh openstreetmapfilename [imported-dir-name] [extra_postcodes] [libpostal_country]"
     exit 0    
 fi
 
@@ -39,8 +43,10 @@ for module in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 17 22; do
 done
 #"$PROGPATH"/libosmscout/install/bin/Import --altLangOrder en --typefile "$PROGPATH"/stylesheet/map.ost --destinationDirectory "$D"/tmp "$1"
 
-if [ "$#" -eq 3 ]; then
-    "$PROGPATH"/importer "$D"/tmp "$D" "$PROGPATH"/stylesheet/whitelist "$POSTAL"
+if [ "$#" -eq 4 ]; then
+    "$PROGPATH"/importer "$D"/tmp "$D" "$PROGPATH"/stylesheet/whitelist "$EXTRA_POST" "$POSTAL"
+elif [ "$#" -eq 3 ]; then
+    "$PROGPATH"/importer "$D"/tmp "$D" "$PROGPATH"/stylesheet/whitelist "$EXTRA_POST"
 else
     "$PROGPATH"/importer "$D"/tmp "$D" "$PROGPATH"/stylesheet/whitelist 
 fi

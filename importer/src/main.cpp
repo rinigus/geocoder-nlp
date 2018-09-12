@@ -900,7 +900,7 @@ int main(int argc, char* argv[])
 
   if (argc<4)
     {
-      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> <whitelist file> [postal_codes.csv] [<postal_country_parser_code>] [address_parser_directory] [verbose]\n";
+      std::cerr << "importer <libosmscout map directory> <geocoder-nlp database directory> <whitelist file> [postal_codes.csv] [postal_country_parser_code] [address_parser_directory] [verbose]\n";
       std::cerr << "When using optional parameters, you have to specify all of the perceiving ones\n";
       return 1;
     }
