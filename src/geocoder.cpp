@@ -210,7 +210,7 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query, std:
           search(r, postal_code, result);
 #ifdef GEONLP_PRINT_DEBUG_QUERIES
         else
-          std::cout << "Skipping hierarchy since search result already has more levels than provided\n";
+          std::cout << "Skipping hierarchy since search result already has more levels (" << m_levels_resolved << ") than provided\n";
 #endif
 #ifdef GEONLP_PRINT_DEBUG_QUERIES
         std::cout << "\n";
@@ -371,13 +371,14 @@ bool Geocoder::search(const Postal::Hierarchy &parsed, const std::string &postal
            !search(parsed, postal_is_ok ? "" : postal_code, result, level+1, id+1, last_subobject) )
         {
           size_t levels_resolved = level+1;
+          bool newlevel = false;
           if ( m_levels_resolved < levels_resolved )
             {
               result.clear();
-              m_levels_resolved = levels_resolved;
+              newlevel = true;
             }
-
-          if (m_levels_resolved == levels_resolved && (m_max_results == 0 || result.size() < m_max_inter_results))
+              
+          if ( (m_levels_resolved == levels_resolved || newlevel) && (m_max_results == 0 || result.size() < m_max_inter_results))
             {
               bool have_already = false;
               for (const auto &r: result)
@@ -395,6 +396,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed, const std::string &postal
                       r.id = id;
                       r.levels_resolved = levels_resolved;
                       result.push_back(r);
+                      m_levels_resolved = levels_resolved;
                     }
                   else if (id < last_subobject)
                     {
@@ -415,6 +417,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed, const std::string &postal
                           v.getter() >> r.id;
                           r.levels_resolved = levels_resolved;
                           result.push_back(r);
+                          m_levels_resolved = levels_resolved;
                           if (m_max_results > 0 && result.size() >= m_max_inter_results)
                             break;
                         }

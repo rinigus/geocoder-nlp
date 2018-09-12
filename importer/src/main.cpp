@@ -582,10 +582,11 @@ public:
         const auto &v = additional_postal_codes.at(rid);
         for (auto c: v)
           {
-            sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, postal_code, longitude, latitude) VALUES (?, ?, ?, ?)");
+            sqlite3pp::command cmd(m_db, "INSERT INTO object_primary_tmp (id, postal_code, parent, longitude, latitude) VALUES (?, ?, ?, ?, ?)");
             id = IDs.next();
             cmd.binder() << id
                          << c.code
+                         << regionID
                          << c.longitude
                          << c.latitude;
             if (cmd.execute() != SQLITE_OK)

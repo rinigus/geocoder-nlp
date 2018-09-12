@@ -27,7 +27,8 @@ using namespace GeoNLP;
 #define ADDRESS_PARSER_LABEL_COUNTRY_REGION "country_region"
 #define ADDRESS_PARSER_LABEL_COUNTRY  "country"
 
-#define PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE "post:"
+#define PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_INPUT "post:"
+#define PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_KEY "h-postcode"
 
 //////////////////////////////////////////////////////////////////////
 /// Helper string functions
@@ -311,29 +312,28 @@ bool Postal::parse(const std::string &input, std::vector<Postal::ParseResult> &r
     {
       std::vector<std::string> hier;
       split_tokens(input, ',', hier);
+      if (hier.empty()) hier.push_back(input);
 
-      if (!hier.empty())
+      ParseResult prim;
+      int shift = 0;
+      size_t np = strlen(PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_INPUT);
+      for (size_t j = 0; j < hier.size(); j++)
         {
-          ParseResult prim;
-          int shift = 0;
-          size_t np = strlen(PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE);
-          for (size_t j = 0; j < hier.size(); j++)
+          std::string v = hier[hier.size()-j-1];
+          std::string key = primitive_key(j-shift);
+          v = trim(v);
+          if (v.compare(0, np, PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_INPUT) == 0)
             {
-              std::string v = hier[hier.size()-j-1];
-              std::string key = primitive_key(j-shift);
-              if (v.compare(0, np, PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE) == 0)
-                {
-                  v = v.substr(np+1);
-                  v = trim(v);
-                  key = PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE;
-                  shift += 1;
-                }
-              std::vector<std::string> pc; pc.push_back(v);
-              prim[key] = pc;
+              v = v.substr(np);
+              v = trim(v);
+              key = PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_KEY;
+              shift += 1;
             }
-
-          expand(prim, result);
+          std::vector<std::string> pc; pc.push_back(v);
+          prim[key] = pc;
         }
+      
+      expand(prim, result);
     }
 
   if (m_initialize_for_every_call) drop();
@@ -370,7 +370,7 @@ void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseR
         {
           std::vector< std::string > norm;
           // no need to keep postal code in normalized and expanded
-          if (i.first == ADDRESS_PARSER_LABEL_POSTAL_CODE)
+          if (i.first == ADDRESS_PARSER_LABEL_POSTAL_CODE || i.first == PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_KEY)
             norm.push_back(tonorm);
           else
             {
@@ -491,6 +491,11 @@ void Postal::result2hierarchy(const std::vector<ParseResult> &p, std::vector<Hie
                 h_result.push_back(it->second);
             }
         }
+
+      // overwrite with the primitive parser postal code if needed
+      ParseResult::const_iterator it = r.find(PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_KEY);
+      if (it != r.end() && it->second.size())
+        postal_code = normalize_postalcode(it->second[0]);
 
       h.push_back(h_result);
     }
