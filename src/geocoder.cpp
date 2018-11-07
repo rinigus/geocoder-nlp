@@ -453,6 +453,7 @@ void Geocoder::get_name(long long id, std::string &title, std::string &full, siz
         if (neng) name_en = neng;
       }
 
+      if (name.empty() && levels_in_title > 0) name=get_postal_code(id);
       if (name.empty()) name=" ";
 
       toadd = std::string();
