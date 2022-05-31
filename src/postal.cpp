@@ -8,6 +8,7 @@
 #include <functional>
 #include <cctype>
 #include <locale>
+#include <set>
 
 #include <string.h>
 
@@ -363,26 +364,29 @@ void Postal::expand(const Postal::ParseResult &input, std::vector<Postal::ParseR
 
   std::vector< std::vector< std::string > > address_expansions;
   std::vector< std::string > address_keys;
-  for (const auto i: input)
+  for (const auto &i: input)
     {
       // in practice, its only one element at ParseResult at this stage
-      for (const std::string tonorm: i.second)
+      for (const std::string &tonorm: i.second)
         {
-          std::vector< std::string > norm;
+          std::set< std::string > norm;
+	  // always add unexpanded result into address expansions
+	  // this will help with the partial entries as described in
+	  // issue #64 https://github.com/rinigus/geocoder-nlp/issues/64
+	  norm.insert(tonorm);
           // no need to keep postal code in normalized and expanded
-          if (i.first == ADDRESS_PARSER_LABEL_POSTAL_CODE || i.first == PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_KEY)
-            norm.push_back(tonorm);
-          else
+          if (i.first != ADDRESS_PARSER_LABEL_POSTAL_CODE && i.first != PRIMITIVE_ADDRESS_PARSER_POSTAL_CODE_KEY)
             {
               charbuff.resize(tonorm.length() + 1);
               std::copy(tonorm.c_str(), tonorm.c_str() + tonorm.length() + 1, charbuff.begin());
               char **expansions = libpostal_expand_address(charbuff.data(), options_norm, &num_expansions);
               for (size_t j = 0; j < num_expansions; j++)
-                norm.push_back(expansions[j]);
+                norm.insert(expansions[j]);
 
               libpostal_expansion_array_destroy(expansions, num_expansions);
             }
-          address_expansions.push_back(norm);
+          address_expansions.push_back(std::vector< std::string >(norm.begin(),
+								  norm.end()));
           address_keys.push_back(i.first);
         }
     }
@@ -417,7 +421,6 @@ void Postal::expand_string(const std::string &input, std::vector<std::string> &e
   std::copy(input.c_str(), input.c_str() + input.length() + 1, charbuff.begin());
 
   char **expansions_cstr = libpostal_expand_address(charbuff.data(), options_norm, &num_expansions);
-  std::vector< std::string > norm;
   for (size_t j = 0; j < num_expansions; j++)
     expansions.push_back(expansions_cstr[j]);
 
