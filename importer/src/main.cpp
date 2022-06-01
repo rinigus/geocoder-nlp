@@ -691,17 +691,20 @@ void normalize_libpostal(sqlite3pp::database& db, std::string address_expansion_
       // insert normalized, but not expanded string
       {
 	char *normalized = libpostal_normalize_string(charbuff.data(), LIBPOSTAL_NORMALIZE_DEFAULT_STRING_OPTIONS);
-	sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
-	std::string s = normalized;
-	cmd.binder() << d.id
-		     << s;
-	if (cmd.execute() != SQLITE_OK)
+	if (normalized != NULL)
 	  {
-	    // std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
-	    num_doubles_dropped++;
-	  }
+	    sqlite3pp::command cmd(db, "INSERT INTO normalized_name (prim_id, name) VALUES (?,?)");
+	    std::string s = normalized;
+	    cmd.binder() << d.id
+			 << s;
+	    if (cmd.execute() != SQLITE_OK)
+	      {
+		// std::cerr << "Error inserting: " << d.id << " " << s << std::endl;
+		num_doubles_dropped++;
+	      }
 
-	free(normalized);
+	    free(normalized);
+	  }
       }
 
       char **expansions = libpostal_expand_address(charbuff.data(), options, &num_expansions);
