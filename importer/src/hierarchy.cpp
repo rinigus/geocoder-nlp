@@ -68,9 +68,15 @@ void Hierarchy::finalize()
   sqlid index      = 1;
   for (auto item : m_root_finalized)
     {
-      index = item->index(index);
+      index = item->index(index, 0);
       item->set_parent(0);
     }
+}
+
+void Hierarchy::write(sqlite3pp::database &db) const
+{
+  for (auto item : m_root_finalized)
+    item->write(db);
 }
 
 std::deque<std::shared_ptr<HierarchyItem> > Hierarchy::root_items() const

@@ -1,15 +1,13 @@
 #ifndef HIERARCHYITEM_H
 #define HIERARCHYITEM_H
 
-#pragma once
+#include "config.h"
 
 #include <deque>
 #include <memory>
 #include <pqxx/pqxx>
+#include <sqlite3pp.h>
 #include <string>
-
-typedef unsigned long hindex;
-typedef long long int sqlid; /// type used by IDs in SQLite
 
 class HierarchyItem
 {
@@ -24,15 +22,17 @@ public:
 
   void  add_child(std::shared_ptr<HierarchyItem> child);
   void  set_parent(hindex);
-  sqlid index(sqlid idx);
+  sqlid index(sqlid idx, sqlid parent);
+  void  write(sqlite3pp::database &db) const;
 
-  void print_branch(unsigned int offset);
+  void print_branch(unsigned int offset) const;
 
 private:
   hindex m_id;
   hindex m_linked_id{ 0 };
   hindex m_parent_id;
   sqlid  m_my_index;
+  sqlid  m_parent_index;
   sqlid  m_last_child_index;
 
   std::string m_class;

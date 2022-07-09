@@ -35,11 +35,15 @@ include_directories(src)
 
 # importer
 set(IMPSRC
+  importer/src/config.h
   importer/src/main.cpp
   importer/src/hierarchy.cpp
   importer/src/hierarchy.h
   importer/src/hierarchyitem.cpp
   importer/src/hierarchyitem.h
+  importer/src/normalization.cpp
+  importer/src/normalization.h
+  importer/src/utils.h
 )
 add_executable(geocoder-importer ${SRC} ${HEAD} ${IMPSRC})
 target_link_libraries(geocoder-importer

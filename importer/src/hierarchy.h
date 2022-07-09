@@ -9,6 +9,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <sqlite3pp.h>
 #include <string>
 
 class Hierarchy
@@ -21,6 +22,7 @@ public:
   void add_item(std::shared_ptr<HierarchyItem> &item);
   void set_country(const std::string &country, hindex id);
   void finalize();
+  void write(sqlite3pp::database &db) const;
 
   size_t get_missing_count() const { return m_root.size(); }
   size_t get_root_count() const;

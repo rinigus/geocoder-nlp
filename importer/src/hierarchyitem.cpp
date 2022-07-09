@@ -1,4 +1,5 @@
 #include "hierarchyitem.h"
+#include "utils.h"
 
 #include <iostream>
 #include <nlohmann/json.hpp>
@@ -54,17 +55,72 @@ void HierarchyItem::set_parent(hindex parent)
     c->set_parent(m_id);
 }
 
-sqlid HierarchyItem::index(sqlid idx)
+sqlid HierarchyItem::index(sqlid idx, sqlid parent)
 {
-  m_my_index = idx;
+  m_my_index     = idx;
+  m_parent_index = parent;
   ++idx;
   for (auto item : m_children)
-    idx = item->index(idx);
+    idx = item->index(idx, m_my_index);
   m_last_child_index = idx - 1;
   return idx;
 }
 
-void HierarchyItem::print_branch(unsigned int offset)
+void HierarchyItem::write(sqlite3pp::database &db) const
+{
+  // primary data
+  std::string name    = get_with_def(m_name, "name");
+  std::string name_en = get_with_def(m_name, "name:en");
+  std::string phone   = get_with_def(m_extra, "phone");
+  std::string website = get_with_def(m_extra, "website");
+
+  std::string name_extra;
+  if (!m_housenumber.empty())
+    {
+      name_extra = name;
+      name       = m_housenumber;
+    }
+
+  if (name_extra.empty())
+    name_extra = get_with_def(m_extra, "brand");
+  {
+    sqlite3pp::command cmd(db, "INSERT INTO object_primary_tmp (id, postgres_id, name, name_extra, "
+                               "name_en, phone, postal_code, website, parent, longitude, "
+                               "latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    cmd.binder() << m_my_index << (int)m_id << name << name_extra << name_en << phone << m_postcode
+                 << website << m_parent_index << m_longitude << m_latitude;
+    if (cmd.execute() != SQLITE_OK)
+      std::cerr << "WriteSQL : error inserting primary data for " << m_id << ", " << m_my_index
+                << "\n";
+  }
+
+  // type
+  {
+    std::string command
+        //= "INSERT INTO object_type_tmp (prim_id, type) VALUES (?, \"" + type + "\")";
+        = "INSERT INTO object_type_tmp (prim_id, type) VALUES (?, ?)";
+    sqlite3pp::command cmd(db, command.c_str());
+    cmd.binder() << m_my_index << m_class + "_" + m_type;
+    if (cmd.execute() != SQLITE_OK)
+      std::cerr << "WriteSQL: error inserting type for " << m_id << ", " << m_my_index << "\n";
+  }
+
+  // hierarchy
+  if (m_last_child_index > m_my_index)
+    {
+      sqlite3pp::command cmd(db, "INSERT INTO hierarchy (prim_id, last_subobject) VALUES (?, ?)");
+      cmd.binder() << m_my_index << m_last_child_index;
+      if (cmd.execute() != SQLITE_OK)
+        std::cerr << "WriteSQL: error inserting hierarchy for " << m_id << ", " << m_my_index
+                  << " - " << m_last_child_index << "\n";
+    }
+
+  // children
+  for (const auto &c : m_children)
+    c->write(db);
+}
+
+void HierarchyItem::print_branch(unsigned int offset) const
 {
   std::cout << std::string(offset, ' ') << "- " << m_id << " ";
   if (!m_housenumber.empty())
