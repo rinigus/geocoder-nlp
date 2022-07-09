@@ -52,4 +52,4 @@ Database format is described in [separate document](Database.md).
 
 libpostal: Used for input parsing; https://github.com/openvenues/libpostal
 
-libosmscout: Used for data import; http://libosmscout.sourceforge.net
+Nominatim: Used for data import; https://nominatim.org/
