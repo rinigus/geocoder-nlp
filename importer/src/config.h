@@ -1,7 +1,7 @@
 #ifndef GEOCODER_CONFIG_H
 #define GEOCODER_CONFIG_H
 
-#define TEMPORARY "TEMPORARY" // set to empty if need to debug import
+#define TEMPORARY "" //"TEMPORARY" // set to empty if need to debug import
 
 /// if there are more expansions that specified, this object will be dropped from normalization
 /// table

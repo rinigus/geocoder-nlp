@@ -43,6 +43,7 @@ set(IMPSRC
   importer/src/hierarchyitem.h
   importer/src/normalization.cpp
   importer/src/normalization.h
+  importer/src/utils.cpp
   importer/src/utils.h
 )
 add_executable(geocoder-importer ${SRC} ${HEAD} ${IMPSRC})

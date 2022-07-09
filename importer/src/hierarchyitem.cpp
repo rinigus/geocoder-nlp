@@ -2,23 +2,7 @@
 #include "utils.h"
 
 #include <iostream>
-#include <nlohmann/json.hpp>
 #include <stdexcept>
-#include <string>
-
-using json = nlohmann::json;
-
-static std::map<std::string, std::string> parse_to_map(const std::string &js)
-{
-  std::map<std::string, std::string> m;
-  if (js.size())
-    {
-      json j = json::parse(js);
-      for (auto v : j.items())
-        m[v.key()] = v.value();
-    }
-  return m;
-}
 
 HierarchyItem::HierarchyItem(const pqxx::row &row)
 {
@@ -100,7 +84,7 @@ void HierarchyItem::write(sqlite3pp::database &db) const
         //= "INSERT INTO object_type_tmp (prim_id, type) VALUES (?, \"" + type + "\")";
         = "INSERT INTO object_type_tmp (prim_id, type) VALUES (?, ?)";
     sqlite3pp::command cmd(db, command.c_str());
-    cmd.binder() << m_my_index << m_class + "_" + m_type;
+    cmd.binder() << m_my_index << geocoder_type(m_class, m_type);
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "WriteSQL: error inserting type for " << m_id << ", " << m_my_index << "\n";
   }
