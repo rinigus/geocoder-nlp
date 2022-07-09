@@ -26,6 +26,17 @@ void HierarchyItem::add_child(std::shared_ptr<HierarchyItem> child)
   m_children.push_back(child);
 }
 
+void HierarchyItem::add_linked(std::shared_ptr<HierarchyItem> linked)
+{
+  m_name.insert(linked->m_name.begin(), linked->m_name.end());
+  m_extra.insert(linked->m_extra.begin(), linked->m_extra.end());
+  //   if (m_class != linked->m_class || m_type != linked->m_type)
+  //     std::cout << "Mismatch between linked objects: " << m_id << ", " << m_class << ", " <<
+  //     m_type
+  //               << " -> " << linked->m_id << ", " << linked->m_class << ", " << linked->m_type
+  //               << "\n";
+}
+
 void HierarchyItem::set_parent(hindex parent)
 {
   if (m_parent_id != parent && m_parent_id != 0)

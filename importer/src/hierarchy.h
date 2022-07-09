@@ -18,8 +18,8 @@ public:
   Hierarchy();
   ~Hierarchy();
 
-  // void add_item(hindex id, hindex parent_id, const std::string &country);
   void add_item(std::shared_ptr<HierarchyItem> &item);
+  void add_linked_item(std::shared_ptr<HierarchyItem> &item);
   void set_country(const std::string &country, hindex id);
   void finalize();
   void write(sqlite3pp::database &db) const;

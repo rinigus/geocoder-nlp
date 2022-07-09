@@ -21,6 +21,7 @@ public:
   const std::string &country() const { return m_country; }
 
   void  add_child(std::shared_ptr<HierarchyItem> child);
+  void  add_linked(std::shared_ptr<HierarchyItem> linked);
   void  set_parent(hindex);
   sqlid index(sqlid idx, sqlid parent);
   void  write(sqlite3pp::database &db) const;

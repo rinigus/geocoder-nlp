@@ -125,6 +125,22 @@ int main(int argc, char *argv[])
 
   // load all linked places and merge with the primary ones
   {
+    pqxx::result r = txn.exec_params(
+        base_query
+            + "where linked_place_id IS NOT NULL and ST_Intersects(ST_GeomFromGeoJSON($1), "
+              "geometry) order by admin_level",
+        border);
+    size_t count = 0;
+    for (const pqxx::row &row : r)
+      {
+        ++count;
+        std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
+        hierarchy.add_linked_item(item);
+        if (count % 10000 == 0)
+          std::cout << "Imported linked records: " << count
+                    << "; Root elements: " << hierarchy.get_root_count()
+                    << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
+      }
   }
 
   std::cout << "Fill missing hierarchies. Root size: " << hierarchy.get_root_count() << "\n";
