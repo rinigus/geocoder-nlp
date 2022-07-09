@@ -27,7 +27,7 @@ std::map<std::string, std::string> parse_to_map(const std::string &js)
 
 std::string geocoder_type(const std::string &t_class, const std::string &t_value)
 {
-  if (t_class == "building" || t_value == "yes")
+  if (t_value == "yes")
     return t_class;
   return t_class + "_" + t_value;
 }
