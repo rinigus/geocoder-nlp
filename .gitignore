@@ -18,3 +18,4 @@
 build/
 .vscode
 *.code-workspace
+CMakeLists.txt.user
