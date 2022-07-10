@@ -25,6 +25,11 @@ std::map<std::string, std::string> parse_to_map(const std::string &js)
   return m;
 }
 
+bool same_starts_with(const std::string &start, const std::string &s1, const std::string &s2)
+{
+  return s1.rfind(start, 0) == 0 && s2.rfind(start, 0) == 0;
+}
+
 std::string geocoder_type(const std::string &t_class, const std::string &t_value)
 {
   if (t_value == "yes" || t_value.empty())

@@ -25,16 +25,7 @@ HierarchyItem::HierarchyItem(const pqxx::row &row)
   m_data_name  = parse_to_map(row["name"].as<std::string>(""));
   m_data_extra = parse_to_map(row["extra"].as<std::string>(""));
 
-  m_name = get_with_def(m_data_name, "name");
-  m_name_extra.clear();
-  if (!m_housenumber.empty())
-    {
-      m_name_extra = m_name;
-      m_name       = m_housenumber;
-    }
-
-  if (m_name_extra.empty())
-    m_name_extra = get_with_def(m_data_extra, "brand");
+  set_names();
 }
 
 // trim from start (in place)
@@ -103,6 +94,21 @@ bool HierarchyItem::keep() const
   return !m_name.empty() || s_priority_types.count(m_type) > 0;
 }
 
+bool HierarchyItem::is_duplicate(std::shared_ptr<HierarchyItem> item) const
+{
+  if (s_priority_types.count(m_type) > 0)
+    return false;
+
+  if (m_name != item->m_name || m_country != item->m_country || m_postcode != item->m_postcode)
+    return false;
+
+  if (m_type == item->m_type || same_starts_with("building", m_type, item->m_type)
+      || same_starts_with("highway", m_type, item->m_type))
+    return true;
+
+  return false;
+}
+
 void HierarchyItem::add_child(std::shared_ptr<HierarchyItem> child)
 {
   m_children.push_back(child);
@@ -113,6 +119,21 @@ void HierarchyItem::add_linked(std::shared_ptr<HierarchyItem> linked)
 {
   m_data_name.insert(linked->m_data_name.begin(), linked->m_data_name.end());
   m_data_extra.insert(linked->m_data_extra.begin(), linked->m_data_extra.end());
+  set_names();
+}
+
+void HierarchyItem::set_names()
+{
+  m_name = get_with_def(m_data_name, "name");
+  m_name_extra.clear();
+  if (!m_housenumber.empty())
+    {
+      m_name_extra = m_name;
+      m_name       = m_housenumber;
+    }
+
+  if (m_name_extra.empty())
+    m_name_extra = get_with_def(m_data_extra, "brand");
 }
 
 void HierarchyItem::set_parent(hindex parent, bool force)
@@ -143,6 +164,34 @@ void HierarchyItem::cleanup_children()
         children.insert(children.end(), item->m_children.begin(), item->m_children.end());
     }
   m_children = children;
+
+  // check for duplicates
+  for (size_t child_index = 0; child_index < m_children.size(); ++child_index)
+    {
+      std::shared_ptr<HierarchyItem>              item = m_children[child_index];
+      std::deque<std::shared_ptr<HierarchyItem> > duplicates;
+
+      children.clear();
+      children.insert(children.end(), m_children.begin(), m_children.begin() + child_index + 1);
+
+      for (size_t i = child_index + 1; i < m_children.size(); ++i)
+        if (m_children[i]->is_duplicate(item))
+          duplicates.push_back(m_children[i]);
+        else
+          children.push_back(m_children[i]);
+
+      // merge duplicates
+      for (auto &i : duplicates)
+        {
+          item->add_linked(i);
+          item->m_children.insert(item->m_children.end(), i->m_children.begin(),
+                                  i->m_children.end());
+          for (auto &i_children : i->m_children)
+            i_children->set_parent(item->m_id, true);
+        }
+
+      m_children = children;
+    }
 
   // set parent, forced
   for (auto item : m_children)

@@ -20,7 +20,9 @@ public:
   hindex             linked_id() const { return m_linked_id; }
   hindex             parent_id() const { return m_parent_id; }
   const std::string &country() const { return m_country; }
-  bool               keep() const;
+
+  bool keep() const;
+  bool is_duplicate(std::shared_ptr<HierarchyItem> item) const;
 
   const std::deque<std::shared_ptr<HierarchyItem> > &children() { return m_children; }
 
@@ -36,6 +38,9 @@ public:
 public:
   static void load_priority_list(const std::string &fname);
   static void load_skip_list(const std::string &fname);
+
+protected:
+  void set_names();
 
 private:
   hindex m_id;
