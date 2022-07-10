@@ -33,6 +33,10 @@ public:
 
   void print_branch(unsigned int offset) const;
 
+public:
+  static void load_priority_list(const std::string &fname);
+  static void load_skip_list(const std::string &fname);
+
 private:
   hindex m_id;
   hindex m_linked_id{ 0 };

@@ -35,18 +35,29 @@ int main(int argc, char *argv[])
   std::string database_path;
   std::string postal_country_parser;
   std::string postal_address_parser_dir;
+  std::string type_priority_list;
+  std::string type_skip_list;
   bool        verbose_address_expansion = false;
 
   {
     po::options_description generic("Geocoder NLP importer options");
-    generic.add_options()("help", "Help message")("version,v", "Data format version")(
-        "poly,p", po::value<std::string>(&polyjson),
-        "Boundary of the imported region in GeoJSON format")(
-        "postal-country", po::value<std::string>(&postal_country_parser),
-        "libpostal country preference for this database")(
+    generic.add_options()("help", "Help message")("version,v", "Data format version");
+    generic.add_options()("poly,p", po::value<std::string>(&polyjson),
+                          "Boundary of the imported region in GeoJSON format");
+    generic.add_options()("postal-country", po::value<std::string>(&postal_country_parser),
+                          "libpostal country preference for this database");
+    generic.add_options()(
         "postal-address", po::value<std::string>(&postal_address_parser_dir),
         "libpostal address parser directory. If not specified, global libpostal parser directory "
-        "preference is used.")("verbose", "Verbose address expansion");
+        "preference is used.");
+    generic.add_options()(
+        "priority", po::value<std::string>(&type_priority_list),
+        "File with OSM tags that are kept even if there is no name associated with the location");
+    generic.add_options()(
+        "skip", po::value<std::string>(&type_skip_list),
+        "File with OSM tags for locations that should be dropped even if there is a name "
+        "associated with the location");
+    generic.add_options()("verbose", "Verbose address expansion");
 
     po::options_description hidden("Hidden options");
     hidden.add_options()("output-directory", po::value<std::string>(&database_path),
@@ -102,6 +113,9 @@ int main(int argc, char *argv[])
       border = j["geometry"].dump();
       std::cout << "Loaded border GeoJSON. Geometry string length: " << border.size() << "\n";
     }
+
+  HierarchyItem::load_priority_list(type_priority_list);
+  HierarchyItem::load_skip_list(type_skip_list);
 
   Hierarchy hierarchy;
 

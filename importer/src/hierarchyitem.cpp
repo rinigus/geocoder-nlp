@@ -1,6 +1,7 @@
 #include "hierarchyitem.h"
 #include "utils.h"
 
+#include <fstream>
 #include <iostream>
 #include <stdexcept>
 
@@ -34,6 +35,60 @@ HierarchyItem::HierarchyItem(const pqxx::row &row)
 
   if (m_name_extra.empty())
     m_name_extra = get_with_def(m_data_extra, "brand");
+}
+
+// trim from start (in place)
+static inline void ltrim(std::string &s)
+{
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) { return !std::isspace(ch); }));
+}
+
+// trim from end (in place)
+static inline void rtrim(std::string &s)
+{
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) { return !std::isspace(ch); }).base(),
+          s.end());
+}
+
+// trim from both ends (in place)
+static inline void trim(std::string &s)
+{
+  ltrim(s);
+  rtrim(s);
+}
+
+static std::set<std::string> load_list(const std::string &fname)
+{
+  std::set<std::string> d;
+  if (fname.empty())
+    return d;
+
+  std::ifstream f(fname);
+  std::string   line;
+  if (!f)
+    {
+      std::cerr << "Failed to open a file: " << fname << std::endl;
+      throw std::runtime_error("File cannot be opened");
+    }
+
+  while (std::getline(f, line))
+    {
+      trim(line);
+      if (!line.empty())
+        d.insert(line);
+    }
+
+  return d;
+}
+
+void HierarchyItem::load_priority_list(const std::string &fname)
+{
+  s_priority_types = load_list(fname);
+}
+
+void HierarchyItem::load_skip_list(const std::string &fname)
+{
+  s_skip_types = load_list(fname);
 }
 
 bool HierarchyItem::keep() const
