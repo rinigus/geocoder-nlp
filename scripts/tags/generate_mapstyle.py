@@ -5,8 +5,7 @@ import sqlite3
 db = sqlite3.connect('taginfo-db.db')
 c = db.cursor()
 
-mapost = ""
-whitelist = ""
+prioritylist = ""
 
 keyvals = []
 for r in c.execute("select key,value from tags where key='shop' order by count_all desc limit 50"):
@@ -22,13 +21,8 @@ keyvals.sort()
 for r in keyvals:
     key, value = r
 
-    mapost += '  TYPE ' + key + '_' + value + '\n'
-    mapost += '    = NODE AREA ("%s"=="%s")\n' % (key, value)
-    mapost += '      {Name, NameAlt}\n      ADDRESS POI\n      GROUP ' + key + '\n\n'
+    prioritylist += key + '_' + value + '\n'
 
-    whitelist += key + '_' + value + '\n'
-
-print(mapost)
-print(whitelist)
+print(prioritylist)
 
     
