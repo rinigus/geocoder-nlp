@@ -9,7 +9,7 @@
 #include "normalization.h"
 
 #include <algorithm>
-#include <boost/tokenizer.hpp>
+#include <boost/program_options.hpp>
 #include <cctype>
 #include <cstdlib>
 #include <deque>
@@ -23,44 +23,69 @@
 #include <set>
 #include <sqlite3pp.h>
 
-using json = nlohmann::json;
+using json   = nlohmann::json;
+namespace po = boost::program_options;
 
 ////////////////////////////////////////////////////////////////////////////
 // MAIN
 
 int main(int argc, char *argv[])
 {
-  if (argc == 2)
-    {
-      std::string option = argv[1];
-      if (option == "--version")
-        {
-          std::cout << GeoNLP::Geocoder::version << "\n";
-          return 0;
-        }
-    }
-
-  if (argc < 3)
-    {
-      std::cerr << "importer <poly.json> <geocoder-nlp database directory> "
-                   "[postal_country_parser_code] [address_parser_directory] [verbose]\n";
-      std::cerr
-          << "When using optional parameters, you have to specify all of the perceiving ones\n";
-      return 1;
-    }
-
-  std::string polyjson      = argv[1];
-  std::string database_path = argv[2];
+  std::string polyjson;
+  std::string database_path;
   std::string postal_country_parser;
   std::string postal_address_parser_dir;
   bool        verbose_address_expansion = false;
 
-  if (argc > 3)
-    postal_country_parser = argv[3];
-  if (argc > 4)
-    postal_address_parser_dir = argv[4];
-  if (argc > 5 && strcmp("verbose", argv[5]) == 0)
-    verbose_address_expansion = true;
+  {
+    po::options_description generic("Geocoder NLP importer options");
+    generic.add_options()("help", "Help message")("version,v", "Data format version")(
+        "poly,p", po::value<std::string>(&polyjson),
+        "Boundary of the imported region in GeoJSON format")(
+        "postal-country", po::value<std::string>(&postal_country_parser),
+        "libpostal country preference for this database")(
+        "postal-address", po::value<std::string>(&postal_address_parser_dir),
+        "libpostal address parser directory. If not specified, global libpostal parser directory "
+        "preference is used.")("verbose", "Verbose address expansion");
+
+    po::options_description hidden("Hidden options");
+    hidden.add_options()("output-directory", po::value<std::string>(&database_path),
+                         "Output directory for imported database");
+
+    po::positional_options_description p;
+    p.add("output-directory", 1);
+
+    po::options_description cmdline_options;
+    cmdline_options.add(generic).add(hidden);
+
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help"))
+      {
+        std::cout << "Geocoder NLP importer:\n\n"
+                  << "Call as\n\n " << argv[0] << " <options> output-directory\n"
+                  << "\nwhere output-directory is a directory for imported database.\n\n"
+                  << generic << "\n";
+        return 0;
+      }
+
+    if (vm.count(("version")))
+      {
+        std::cout << GeoNLP::Geocoder::version << "\n";
+        return 0;
+      }
+
+    if (vm.count("verbose"))
+      verbose_address_expansion = true;
+
+    if (!vm.count("poly"))
+      {
+        std::cerr << "Boundary of the imported region in GeoJSON format is missing\n";
+        return -1;
+      }
+  }
 
   // load GeoJSON for surrounding (multi)polygon from poly.json
   std::string border;

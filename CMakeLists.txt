@@ -14,6 +14,7 @@ include(GNUInstallDirs)
 
 find_package(PkgConfig REQUIRED)
 find_package(nlohmann_json 3.2.0 REQUIRED)
+find_package(Boost 1.30 COMPONENTS program_options REQUIRED)
 
 pkg_check_modules(MARISA marisa IMPORTED_TARGET)
 pkg_check_modules(KYOTOCABINET kyotocabinet IMPORTED_TARGET)
@@ -32,6 +33,9 @@ set(HEAD
 # sqlite3pp include
 include_directories(thirdparty/sqlite3pp/headeronly_src)
 include_directories(src)
+
+# boost
+include_directories(${Boost_INCLUDE_DIR})
 
 # importer
 set(IMPSRC
@@ -53,7 +57,8 @@ target_link_libraries(geocoder-importer
   PkgConfig::POSTAL
   PkgConfig::SQLITE3
   PkgConfig::LIBPQXX
-  nlohmann_json::nlohmann_json)
+  nlohmann_json::nlohmann_json
+  ${Boost_LIBRARIES})
 
 # demo codes
 add_executable(geocoder-nlp
