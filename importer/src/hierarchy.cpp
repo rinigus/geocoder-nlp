@@ -55,6 +55,27 @@ void Hierarchy::add_linked_item(std::shared_ptr<HierarchyItem> &item)
   tolink->second->add_linked(item);
 }
 
+void Hierarchy::cleanup()
+{
+  for (auto root_iter = m_root.begin(); root_iter != m_root.end(); ++root_iter)
+    {
+      std::set<std::shared_ptr<HierarchyItem> > keep;
+      for (auto item : root_iter->second)
+        {
+          item->cleanup_children();
+          if (item->keep())
+            keep.insert(item);
+          else
+            keep.insert(item->children().begin(), item->children().end());
+        }
+      root_iter->second = keep;
+
+      // ensure that the parent is set correctly
+      for (auto item : root_iter->second)
+        item->set_parent(root_iter->first, true);
+    }
+}
+
 void Hierarchy::set_country(const std::string &country, hindex id)
 {
   if (!m_items.count(id))
@@ -85,6 +106,9 @@ void Hierarchy::finalize()
       index = item->index(index, 0);
       item->set_parent(0);
     }
+
+  std::cout << "Hierarchy: active items: " << index
+            << " / cleared items: " << m_items.size() - index << "\n";
 }
 
 void Hierarchy::write(sqlite3pp::database &db) const

@@ -143,23 +143,35 @@ int main(int argc, char *argv[])
       }
   }
 
+  // find missing parents for root nodes
   std::cout << "Fill missing hierarchies. Root size: " << hierarchy.get_root_count() << "\n";
   for (hindex parent = hierarchy.get_next_nonzero_root_parent(); parent;)
     {
-      pqxx::result r = txn.exec_params(base_query + "where place_id=$1", parent);
+      pqxx::result r     = txn.exec_params(base_query + "where place_id=$1", parent);
+      bool         found = false;
       for (auto row : r)
         {
           std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
           hierarchy.add_item(item);
+          found = true;
+        }
+
+      if (!found)
+        {
+          std::cerr << "Missing parent with ID " << parent << ". Stopping import\n";
+          return -1;
         }
 
       parent = hierarchy.get_next_nonzero_root_parent();
     }
 
-  std::cout << "Try to fill missing parents through countries. Root size: "
-            << hierarchy.get_root_count() << "\n";
+  // remove all items from hierarchy that are not supposed to be there
+  std::cout << "Cleanup hierarchy\n";
+  hierarchy.cleanup();
 
   // find missing countries and move root nodes under them if possible
+  std::cout << "Try to fill missing parents through countries. Root size: "
+            << hierarchy.get_root_count() << "\n";
   for (std::string country : hierarchy.get_root_countries())
     {
       for (auto row : txn.exec_params(
@@ -171,7 +183,7 @@ int main(int argc, char *argv[])
 
   txn.commit(); // finalize postgres transactions
 
-  hierarchy.print(false);
+  // hierarchy.print(false);
 
   // Saving data into SQLite
   sqlite3pp::database db(GeoNLP::Geocoder::name_primary(database_path).c_str());
@@ -261,6 +273,22 @@ int main(int argc, char *argv[])
              "SELECT box_id, min(latitude), max(latitude), min(longitude), max(longitude) from "
              "object_primary group by box_id");
 
+  // Stats view
+  db.execute("DROP VIEW IF EXISTS type_stats");
+  db.execute(
+      "CREATE VIEW type_stats AS SELECT t.name as type_name, COUNT(*) AS cnt FROM object_primary o "
+      "JOIN \"type\" t ON t.id = o.type_id GROUP BY t.name ORDER BY cnt desc");
+  {
+    std::cout << "List of most popular imported types\n";
+    sqlite3pp::query qry(db, "SELECT type_name, cnt FROM type_stats ORDER BY cnt DESC LIMIT 25");
+    for (auto v : qry)
+      {
+        std::string name;
+        int         cnt;
+        v.getter() >> name >> cnt;
+        std::cout << " " << name << "\t" << cnt << "\n";
+      }
+  }
   // Recording version
   db.execute("DROP TABLE IF EXISTS meta");
   db.execute("CREATE TABLE meta (key TEXT, value TEXT)");

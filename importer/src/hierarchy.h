@@ -21,6 +21,7 @@ public:
   void add_item(std::shared_ptr<HierarchyItem> &item);
   void add_linked_item(std::shared_ptr<HierarchyItem> &item);
   void set_country(const std::string &country, hindex id);
+  void cleanup();
   void finalize();
   void write(sqlite3pp::database &db) const;
 

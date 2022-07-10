@@ -6,6 +6,7 @@
 #include <deque>
 #include <memory>
 #include <pqxx/pqxx>
+#include <set>
 #include <sqlite3pp.h>
 #include <string>
 
@@ -19,10 +20,14 @@ public:
   hindex             linked_id() const { return m_linked_id; }
   hindex             parent_id() const { return m_parent_id; }
   const std::string &country() const { return m_country; }
+  bool               keep() const;
+
+  const std::deque<std::shared_ptr<HierarchyItem> > &children() { return m_children; }
 
   void  add_child(std::shared_ptr<HierarchyItem> child);
   void  add_linked(std::shared_ptr<HierarchyItem> linked);
-  void  set_parent(hindex);
+  void  set_parent(hindex parent, bool force = false);
+  void  cleanup_children();
   sqlid index(sqlid idx, sqlid parent);
   void  write(sqlite3pp::database &db) const;
 
@@ -36,18 +41,22 @@ private:
   sqlid  m_parent_index;
   sqlid  m_last_child_index;
 
-  std::string m_class;
   std::string m_type;
   float       m_latitude;
   float       m_longitude;
   std::string m_country;
   std::string m_postcode;
   std::string m_housenumber;
+  std::string m_name;
+  std::string m_name_extra;
 
-  std::map<std::string, std::string> m_name;
-  std::map<std::string, std::string> m_extra;
+  std::map<std::string, std::string> m_data_name;
+  std::map<std::string, std::string> m_data_extra;
 
   std::deque<std::shared_ptr<HierarchyItem> > m_children;
+
+  static std::set<std::string> s_priority_types;
+  static std::set<std::string> s_skip_types;
 };
 
 #endif
