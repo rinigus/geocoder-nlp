@@ -20,16 +20,14 @@ public:
   hindex             linked_id() const { return m_linked_id; }
   hindex             parent_id() const { return m_parent_id; }
   const std::string &country() const { return m_country; }
-
-  bool keep() const;
-  bool is_duplicate(std::shared_ptr<HierarchyItem> item) const;
+  bool               keep() const;
 
   const std::deque<std::shared_ptr<HierarchyItem> > &children() { return m_children; }
 
   void  add_child(std::shared_ptr<HierarchyItem> child);
   void  add_linked(std::shared_ptr<HierarchyItem> linked);
   void  set_parent(hindex parent, bool force = false);
-  void  cleanup_children();
+  void  cleanup_children(bool duplicate_only = false);
   sqlid index(sqlid idx, sqlid parent);
   void  write(sqlite3pp::database &db) const;
 
@@ -41,6 +39,7 @@ public:
 
 protected:
   void set_names();
+  bool is_duplicate(std::shared_ptr<HierarchyItem> item) const;
 
 private:
   hindex m_id;

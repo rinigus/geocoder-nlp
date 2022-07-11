@@ -99,7 +99,7 @@ bool HierarchyItem::is_duplicate(std::shared_ptr<HierarchyItem> item) const
   if (s_priority_types.count(m_type) > 0)
     return false;
 
-  if (m_name != item->m_name || m_country != item->m_country || m_postcode != item->m_postcode)
+  if (m_name != item->m_name || m_postcode != item->m_postcode)
     return false;
 
   if (m_type == item->m_type || same_starts_with("building", m_type, item->m_type)
@@ -149,29 +149,32 @@ void HierarchyItem::set_parent(hindex parent, bool force)
   //     c->set_parent(m_id, force);
 }
 
-void HierarchyItem::cleanup_children()
+void HierarchyItem::cleanup_children(bool duplicate_only)
 {
   // as a result of this run, children that are supposed to be kept are staying in children
   // property. all disposed ones are still pointed to via Hierarchy map, but should not be accessed
   // while moving along hierarchy for indexing or writing it
-  std::deque<std::shared_ptr<HierarchyItem> > children;
-  for (auto item : m_children)
-    {
-      item->cleanup_children();
-      if (item->keep())
-        children.push_back(item);
-      else
-        children.insert(children.end(), item->m_children.begin(), item->m_children.end());
-    }
-  m_children = children;
+  {
+    std::deque<std::shared_ptr<HierarchyItem> > children;
+    for (auto item : m_children)
+      {
+        item->cleanup_children();
+        if (item->keep())
+          children.push_back(item);
+        else
+          children.insert(children.end(), item->m_children.begin(), item->m_children.end());
+      }
+    m_children = children;
+  }
 
   // check for duplicates
+  bool had_duplicates = false;
   for (size_t child_index = 0; child_index < m_children.size(); ++child_index)
     {
       std::shared_ptr<HierarchyItem>              item = m_children[child_index];
+      std::deque<std::shared_ptr<HierarchyItem> > children;
       std::deque<std::shared_ptr<HierarchyItem> > duplicates;
 
-      children.clear();
       children.insert(children.end(), m_children.begin(), m_children.begin() + child_index + 1);
 
       for (size_t i = child_index + 1; i < m_children.size(); ++i)
@@ -183,12 +186,16 @@ void HierarchyItem::cleanup_children()
       // merge duplicates
       for (auto &i : duplicates)
         {
+          had_duplicates = true;
           item->add_linked(i);
           item->m_children.insert(item->m_children.end(), i->m_children.begin(),
                                   i->m_children.end());
           for (auto &i_children : i->m_children)
             i_children->set_parent(item->m_id, true);
         }
+
+      if (had_duplicates)
+        item->cleanup_children(true);
 
       m_children = children;
     }
