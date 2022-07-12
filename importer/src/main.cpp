@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
 
   {
     po::options_description generic("Geocoder NLP importer options");
-    generic.add_options()("help", "Help message")("version,v", "Data format version");
+    generic.add_options()("help,h", "Help message")("version,v", "Data format version");
     generic.add_options()("poly,p", po::value<std::string>(&polyjson),
                           "Boundary of the imported region in GeoJSON format");
     generic.add_options()("postal-country", po::value<std::string>(&postal_country_parser),
@@ -70,8 +70,17 @@ int main(int argc, char *argv[])
     cmdline_options.add(generic).add(hidden);
 
     po::variables_map vm;
-    po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(), vm);
-    po::notify(vm);
+    try
+      {
+        po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(),
+                  vm);
+        po::notify(vm);
+      }
+    catch (std::exception &e)
+      {
+        std::cerr << "Error while parsing options: " << e.what() << "\n\n";
+        std::cerr << generic << "\n";
+      }
 
     if (vm.count("help"))
       {
