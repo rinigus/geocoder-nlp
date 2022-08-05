@@ -21,6 +21,7 @@ HierarchyItem::HierarchyItem(const pqxx::row &row)
   m_postcode    = row["postcode"].as<std::string>("");
   m_latitude    = row["latitude"].as<float>(0);
   m_longitude   = row["longitude"].as<float>(0);
+  m_osm_id      = row["osm_id"].as<uint64_t>(0);
 
   m_data_name  = parse_to_map(row["name"].as<std::string>(""));
   m_data_extra = parse_to_map(row["extra"].as<std::string>(""));
@@ -272,8 +273,8 @@ void HierarchyItem::print_branch(unsigned int offset) const
     std::cout << "house " << m_housenumber << " ";
   for (const auto &i : m_data_name)
     std::cout << i.first << ": " << i.second << " ";
-  std::cout << "(" << m_my_index << " " << m_last_child_index - m_my_index << ": " << m_parent_id
-            << ", " << m_country << ")\n";
+  std::cout << "(" << m_my_index << " " << m_last_child_index << ": " << m_last_child_index - m_my_index << ": " << m_parent_id
+            << ", " << m_country <<", osmid=" << m_osm_id << ")\n";
   if (m_children.size())
     std::cout << std::string(offset + 2, ' ') << "|\n";
   for (auto c : m_children)

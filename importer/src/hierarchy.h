@@ -27,6 +27,7 @@ public:
 
   size_t get_missing_count() const { return m_root.size(); }
   size_t get_root_count() const;
+  bool   has_item(hindex id) const;
 
   hindex                get_next_nonzero_root_parent() const;
   std::set<std::string> get_root_countries() const;

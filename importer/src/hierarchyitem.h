@@ -52,6 +52,7 @@ private:
   std::string m_type;
   float       m_latitude;
   float       m_longitude;
+  uint64_t    m_osm_id;
   std::string m_country;
   std::string m_postcode;
   std::string m_housenumber;

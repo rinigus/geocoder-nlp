@@ -1,6 +1,8 @@
 #ifndef GEOCODER_CONFIG_H
 #define GEOCODER_CONFIG_H
 
+#include <cstdint>
+
 #define TEMPORARY "TEMPORARY" // set to empty if need to debug import
 
 /// if there are more expansions that specified, this object will be dropped from normalization
@@ -14,7 +16,7 @@
 
 #define GEOCODER_IMPORTER_POSTGRES "GEOCODER_IMPORTER_POSTGRES"
 
-typedef unsigned long hindex;
+typedef uint64_t hindex;
 typedef long long int sqlid; /// type used by IDs in SQLite
 
 #endif

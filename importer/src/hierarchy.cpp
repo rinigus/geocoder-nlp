@@ -79,7 +79,13 @@ void Hierarchy::cleanup()
 void Hierarchy::set_country(const std::string &country, hindex id)
 {
   if (!m_items.count(id))
-    std::cout << "Missing country in the database: " << country << "\n";
+    {
+      std::cout << "Missing country in the database: " << country << " / " << id << "\n";
+      for (auto item : root_items())
+	if (item->country() == country)
+	  item->print_branch(0);
+    }
+
 
   auto parent = m_items[id];
   for (auto root_iter = m_root.begin(); root_iter != m_root.end(); ++root_iter)
@@ -91,7 +97,7 @@ void Hierarchy::set_country(const std::string &country, hindex id)
             parent->add_child(item);
             remove.insert(item);
           }
-      std::cout << "Relocated to country: " << remove.size() << "\n";
+      std::cout << "Relocated to country: " << country << " - " << remove.size() << "\n";
       for (auto item : remove)
         root_iter->second.erase(item);
     }
@@ -148,6 +154,11 @@ std::set<std::string> Hierarchy::get_root_countries() const
   for (auto item : root_items())
     missing.insert(item->country());
   return missing;
+}
+
+bool Hierarchy::has_item(hindex id) const
+{
+  return m_items.count(id);
 }
 
 void Hierarchy::print(bool full) const
