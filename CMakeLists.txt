@@ -94,6 +94,10 @@ target_link_libraries(nearby-point
   PkgConfig::POSTAL
   PkgConfig::SQLITE3)
 
+# install
+install(TARGETS geocoder-importer
+    DESTINATION ${CMAKE_INSTALL_BINDIR})
+
 # summary
 feature_summary(WHAT ALL FATAL_ON_MISSING_REQUIRED_PACKAGES)
 
