@@ -82,10 +82,9 @@ void Hierarchy::set_country(const std::string &country, hindex id)
     {
       std::cout << "Missing country in the database: " << country << " / " << id << "\n";
       for (auto item : root_items())
-	if (item->country() == country)
-	  item->print_branch(0);
+        if (item->country() == country)
+          item->print_branch(0);
     }
-
 
   auto parent = m_items[id];
   for (auto root_iter = m_root.begin(); root_iter != m_root.end(); ++root_iter)

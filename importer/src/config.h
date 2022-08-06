@@ -16,7 +16,7 @@
 
 #define GEOCODER_IMPORTER_POSTGRES "GEOCODER_IMPORTER_POSTGRES"
 
-typedef uint64_t hindex;
+typedef uint64_t      hindex;
 typedef long long int sqlid; /// type used by IDs in SQLite
 
 #endif

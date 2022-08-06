@@ -45,25 +45,25 @@ int main(int argc, char *argv[])
     po::options_description generic("Geocoder NLP importer options");
     generic.add_options()("help,h", "Help message")("version,v", "Data format version");
     generic.add_options()("poly,p", po::value<std::string>(&polyjson),
-			  "Boundary of the imported region in GeoJSON format");
+                          "Boundary of the imported region in GeoJSON format");
     generic.add_options()("postal-country", po::value<std::string>(&postal_country_parser),
-			  "libpostal country preference for this database");
+                          "libpostal country preference for this database");
     generic.add_options()(
-	"postal-address", po::value<std::string>(&postal_address_parser_dir),
-	"libpostal address parser directory. If not specified, global libpostal parser directory "
-	"preference is used.");
+        "postal-address", po::value<std::string>(&postal_address_parser_dir),
+        "libpostal address parser directory. If not specified, global libpostal parser directory "
+        "preference is used.");
     generic.add_options()(
-	"priority", po::value<std::string>(&type_priority_list),
-	"File with OSM tags that are kept even if there is no name associated with the location");
+        "priority", po::value<std::string>(&type_priority_list),
+        "File with OSM tags that are kept even if there is no name associated with the location");
     generic.add_options()(
-	"skip", po::value<std::string>(&type_skip_list),
-	"File with OSM tags for locations that should be dropped even if there is a name "
-	"associated with the location");
+        "skip", po::value<std::string>(&type_skip_list),
+        "File with OSM tags for locations that should be dropped even if there is a name "
+        "associated with the location");
     generic.add_options()("verbose", "Verbose address expansion");
 
     po::options_description hidden("Hidden options");
     hidden.add_options()("output-directory", po::value<std::string>(&database_path),
-			 "Output directory for imported database");
+                         "Output directory for imported database");
 
     po::positional_options_description p;
     p.add("output-directory", 1);
@@ -74,29 +74,29 @@ int main(int argc, char *argv[])
     po::variables_map vm;
     try
       {
-	po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(),
-		  vm);
-	po::notify(vm);
+        po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(),
+                  vm);
+        po::notify(vm);
       }
     catch (std::exception &e)
       {
-	std::cerr << "Error while parsing options: " << e.what() << "\n\n";
-	std::cerr << generic << "\n";
+        std::cerr << "Error while parsing options: " << e.what() << "\n\n";
+        std::cerr << generic << "\n";
       }
 
     if (vm.count("help"))
       {
-	std::cout << "Geocoder NLP importer:\n\n"
-		  << "Call as\n\n " << argv[0] << " <options> output-directory\n"
-		  << "\nwhere output-directory is a directory for imported database.\n\n"
-		  << generic << "\n";
-	return 0;
+        std::cout << "Geocoder NLP importer:\n\n"
+                  << "Call as\n\n " << argv[0] << " <options> output-directory\n"
+                  << "\nwhere output-directory is a directory for imported database.\n\n"
+                  << generic << "\n";
+        return 0;
       }
 
     if (vm.count(("version")))
       {
-	std::cout << GeoNLP::Geocoder::version << "\n";
-	return 0;
+        std::cout << GeoNLP::Geocoder::version << "\n";
+        return 0;
       }
 
     if (vm.count("verbose"))
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
 
     if (!vm.count("poly"))
       {
-	std::cerr << "Boundary of the imported region in GeoJSON format is missing\n";
-	return -1;
+        std::cerr << "Boundary of the imported region in GeoJSON format is missing\n";
+        return -1;
       }
   }
 
@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
   else
     {
       std::cout << "Please specify PostgreSQL connection string using environment variable "
-		<< GEOCODER_IMPORTER_POSTGRES << "\n";
+                << GEOCODER_IMPORTER_POSTGRES << "\n";
       return 0;
     }
 
@@ -148,48 +148,48 @@ int main(int argc, char *argv[])
 
   const std::string base_query
       = "select place_id, linked_place_id, parent_place_id, country_code, class, type, "
-	"hstore_to_json(name) as name, hstore_to_json(extratags) as extra, "
-	"COALESCE(address->'housenumber',housenumber) AS housenumber, postcode, ST_X(centroid) as "
-	"longitude, ST_Y(centroid) as latitude, osm_id "
-	"from placex ";
+        "hstore_to_json(name) as name, hstore_to_json(extratags) as extra, "
+        "COALESCE(address->'housenumber',housenumber) AS housenumber, postcode, ST_X(centroid) as "
+        "longitude, ST_Y(centroid) as latitude, osm_id "
+        "from placex ";
 
   // load primary hierarchy
   {
     pqxx::result r = txn.exec_params(
-	base_query
-	    + "where linked_place_id IS NULL and ST_Intersects(ST_GeomFromGeoJSON($1), "
-	      "geometry) order by admin_level",
-	border);
+        base_query
+            + "where linked_place_id IS NULL and ST_Intersects(ST_GeomFromGeoJSON($1), "
+              "geometry) order by admin_level",
+        border);
     size_t count = 0;
     for (const pqxx::row &row : r)
       {
-	++count;
-	std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
-	hierarchy.add_item(item);
-	if (count % printout_step == 0)
-	  std::cout << "Imported records: " << count
-		    << "; Root elements: " << hierarchy.get_root_count()
-		    << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
+        ++count;
+        std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
+        hierarchy.add_item(item);
+        if (count % printout_step == 0)
+          std::cout << "Imported records: " << count
+                    << "; Root elements: " << hierarchy.get_root_count()
+                    << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
       }
   }
 
   // load all linked places and merge with the primary ones
   {
     pqxx::result r = txn.exec_params(
-	base_query
-	    + "where linked_place_id IS NOT NULL and ST_Intersects(ST_GeomFromGeoJSON($1), "
-	      "geometry) order by admin_level",
-	border);
+        base_query
+            + "where linked_place_id IS NOT NULL and ST_Intersects(ST_GeomFromGeoJSON($1), "
+              "geometry) order by admin_level",
+        border);
     size_t count = 0;
     for (const pqxx::row &row : r)
       {
-	++count;
-	std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
-	hierarchy.add_linked_item(item);
-	if (count % printout_step == 0)
-	  std::cout << "Imported linked records: " << count
-		    << "; Root elements: " << hierarchy.get_root_count()
-		    << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
+        ++count;
+        std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
+        hierarchy.add_linked_item(item);
+        if (count % printout_step == 0)
+          std::cout << "Imported linked records: " << count
+                    << "; Root elements: " << hierarchy.get_root_count()
+                    << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
       }
   }
 
@@ -200,17 +200,17 @@ int main(int argc, char *argv[])
       pqxx::result r     = txn.exec_params(base_query + "where place_id=$1", parent);
       bool         found = false;
       for (auto row : r)
-	{
-	  std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
-	  hierarchy.add_item(item);
-	  found = true;
-	}
+        {
+          std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
+          hierarchy.add_item(item);
+          found = true;
+        }
 
       if (!found)
-	{
-	  std::cerr << "Missing parent with ID " << parent << ". Stopping import\n";
-	  return -1;
-	}
+        {
+          std::cerr << "Missing parent with ID " << parent << ". Stopping import\n";
+          return -1;
+        }
 
       parent = hierarchy.get_next_nonzero_root_parent();
     }
@@ -221,20 +221,20 @@ int main(int argc, char *argv[])
 
   // find missing countries and move root nodes under them if possible
   std::cout << "Try to fill missing parents through countries. Root size: "
-	    << hierarchy.get_root_count() << "\n";
+            << hierarchy.get_root_count() << "\n";
   for (std::string country : hierarchy.get_root_countries())
     {
       for (auto row : txn.exec_params(
-	       base_query + "where rank_address = 4 and country_code = $1 limit 1", country))
-	{
-	  hindex id = row["place_id"].as<hindex>(0);
-	  if (!hierarchy.has_item(id))
-	    {
-	      std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
-	      hierarchy.add_item(item);
-	    }
-	  hierarchy.set_country(country, id);
-	}
+               base_query + "where rank_address = 4 and country_code = $1 limit 1", country))
+        {
+          hindex id = row["place_id"].as<hindex>(0);
+          if (!hierarchy.has_item(id))
+            {
+              std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
+              hierarchy.add_item(item);
+            }
+          hierarchy.set_country(country, id);
+        }
     }
 
   hierarchy.finalize();
@@ -262,14 +262,14 @@ int main(int argc, char *argv[])
   db.execute("DROP TABLE IF EXISTS object_primary_rtree");
 
   db.execute("CREATE " TEMPORARY " TABLE object_primary_tmp ("
-	     "id INTEGER PRIMARY KEY AUTOINCREMENT, postgres_id INTEGER, name TEXT, name_extra "
-	     "TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, "
-	     "latitude REAL, longitude REAL)");
+             "id INTEGER PRIMARY KEY AUTOINCREMENT, postgres_id INTEGER, name TEXT, name_extra "
+             "TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, "
+             "latitude REAL, longitude REAL)");
   db.execute("CREATE " TEMPORARY " TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, "
-	     "FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))");
+             "FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))");
   db.execute("CREATE TABLE hierarchy (prim_id INTEGER PRIMARY KEY, last_subobject INTEGER, "
-	     "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) "
-	     "REFERENCES objects_primary(id))");
+             "FOREIGN KEY (prim_id) REFERENCES objects_primary(id), FOREIGN KEY (last_subobject) "
+             "REFERENCES objects_primary(id))");
 
   std::cout << "Preliminary filling of the database" << std::endl;
   hierarchy.write(db);
@@ -283,29 +283,29 @@ int main(int argc, char *argv[])
   db.execute("CREATE TABLE type (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT)");
   db.execute("INSERT INTO type (name) SELECT DISTINCT type FROM object_type_tmp");
   db.execute("CREATE " TEMPORARY
-	     " TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-	     "name TEXT, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website "
-	     "TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
-	     "FOREIGN KEY (type_id) REFERENCES type(id))");
+             " TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
+             "name TEXT, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website "
+             "TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
+             "FOREIGN KEY (type_id) REFERENCES type(id))");
 
   db.execute("INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, phone, postal_code, "
-	     "website, parent, type_id, latitude, longitude, boxstr) "
-	     "SELECT p.id, p.name, p.name_extra, p.name_en, p.phone, p.postal_code, p.website, "
-	     "p.parent, type.id, p.latitude, p.longitude, "
-	     // LINE BELOW DETERMINES ROUNDING USED FOR BOXES
-	     "CAST(CAST(p.latitude*100 AS INTEGER) AS TEXT) || ',' || CAST(CAST(p.longitude*100 AS "
-	     "INTEGER) AS TEXT) "
-	     "FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
-	     "JOIN type ON tt.type=type.name");
+             "website, parent, type_id, latitude, longitude, boxstr) "
+             "SELECT p.id, p.name, p.name_extra, p.name_en, p.phone, p.postal_code, p.website, "
+             "p.parent, type.id, p.latitude, p.longitude, "
+             // LINE BELOW DETERMINES ROUNDING USED FOR BOXES
+             "CAST(CAST(p.latitude*100 AS INTEGER) AS TEXT) || ',' || CAST(CAST(p.longitude*100 AS "
+             "INTEGER) AS TEXT) "
+             "FROM object_primary_tmp p JOIN object_type_tmp tt ON p.id=tt.prim_id "
+             "JOIN type ON tt.type=type.name");
 
   db.execute("CREATE " TEMPORARY " TABLE boxids (id INTEGER PRIMARY KEY AUTOINCREMENT, boxstr "
-	     "TEXT, CONSTRAINT struni UNIQUE (boxstr))");
+             "TEXT, CONSTRAINT struni UNIQUE (boxstr))");
   db.execute("INSERT INTO boxids (boxstr) SELECT DISTINCT boxstr FROM object_primary_tmp2");
 
   db.execute("CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, "
-	     "name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, "
-	     "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
-	     "FOREIGN KEY (type_id) REFERENCES type(id))");
+             "name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, "
+             "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
+             "FOREIGN KEY (type_id) REFERENCES type(id))");
   db.execute(
       "INSERT INTO object_primary (id, name, name_extra, name_en, phone, postal_code, website, "
       "parent, type_id, latitude, longitude, box_id) "
@@ -328,8 +328,8 @@ int main(int argc, char *argv[])
   db.execute(
       "CREATE VIRTUAL TABLE object_primary_rtree USING rtree(id, minLat, maxLat, minLon, maxLon)");
   db.execute("INSERT INTO object_primary_rtree (id, minLat, maxLat, minLon, maxLon) "
-	     "SELECT box_id, min(latitude), max(latitude), min(longitude), max(longitude) from "
-	     "object_primary group by box_id");
+             "SELECT box_id, min(latitude), max(latitude), min(longitude), max(longitude) from "
+             "object_primary group by box_id");
 
   // Stats view
   db.execute("DROP VIEW IF EXISTS type_stats");
@@ -341,10 +341,10 @@ int main(int argc, char *argv[])
     sqlite3pp::query qry(db, "SELECT type_name, cnt FROM type_stats ORDER BY cnt DESC LIMIT 25");
     for (auto v : qry)
       {
-	std::string name;
-	int         cnt;
-	v.getter() >> name >> cnt;
-	std::cout << " " << name << "\t" << cnt << "\n";
+        std::string name;
+        int         cnt;
+        v.getter() >> name >> cnt;
+        std::cout << " " << name << "\t" << cnt << "\n";
       }
   }
   // Recording version
@@ -363,7 +363,7 @@ int main(int argc, char *argv[])
     {
       std::cout << "Recording postal parser country preference: " << postal_country_parser << "\n";
       std::string cmd = "INSERT INTO meta (key, value) VALUES (\"postal:country:parser\", \""
-			+ postal_country_parser + "\")";
+                        + postal_country_parser + "\")";
       db.execute(cmd.c_str());
     }
 
