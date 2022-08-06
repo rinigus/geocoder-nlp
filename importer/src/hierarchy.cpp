@@ -167,6 +167,8 @@ void Hierarchy::print(bool full) const
     {
       if (full)
         item->print_branch(0);
+      else
+        item->print_item(0);
       root_ids.insert(item->id());
     }
 

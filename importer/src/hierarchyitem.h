@@ -31,6 +31,7 @@ public:
   sqlid index(sqlid idx, sqlid parent);
   void  write(sqlite3pp::database &db) const;
 
+  void print_item(unsigned int offset) const;
   void print_branch(unsigned int offset) const;
 
 public:

@@ -266,7 +266,7 @@ void HierarchyItem::write(sqlite3pp::database &db) const
     c->write(db);
 }
 
-void HierarchyItem::print_branch(unsigned int offset) const
+void HierarchyItem::print_item(unsigned int offset) const
 {
   std::cout << std::string(offset, ' ') << "- " << m_id << " ";
   if (!m_housenumber.empty())
@@ -278,22 +278,11 @@ void HierarchyItem::print_branch(unsigned int offset) const
             << ", osmid=" << m_osm_id << ")\n";
   if (m_children.size())
     std::cout << std::string(offset + 2, ' ') << "|\n";
-  for (auto c : m_children)
-    c->print_branch(offset + 3);
 }
 
 void HierarchyItem::print_branch(unsigned int offset) const
 {
-  std::cout << std::string(offset, ' ') << "- " << m_id << " ";
-  if (!m_housenumber.empty())
-    std::cout << "house " << m_housenumber << " ";
-  for (const auto &i : m_data_name)
-    std::cout << i.first << ": " << i.second << " ";
-  std::cout << "(" << m_my_index << " " << m_last_child_index << ": "
-            << m_last_child_index - m_my_index << ": " << m_parent_id << ", " << m_country
-            << ", osmid=" << m_osm_id << ")\n";
-  if (m_children.size())
-    std::cout << std::string(offset + 2, ' ') << "|\n";
+  print_item(offset);
   for (auto c : m_children)
     c->print_branch(offset + 3);
 }
