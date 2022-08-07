@@ -147,11 +147,17 @@ int main(int argc, char *argv[])
   pqxx::work       txn{ pgc };
 
   const std::string base_query
-      = "select place_id, linked_place_id, parent_place_id, country_code, class, type, "
+      = "select place_id, linked_place_id, parent_place_resolved as parent_place_id, country_code, "
+        "class, type, "
         "hstore_to_json(name) as name, hstore_to_json(extratags) as extra, "
         "COALESCE(address->'housenumber',housenumber) AS housenumber, postcode, ST_X(centroid) as "
         "longitude, ST_Y(centroid) as latitude, osm_id "
-        "from placex ";
+        "from placex pl left join lateral "
+        "(with recursive prec as (select place_id, linked_place_id "
+        "from placex where pl.parent_place_id=placex.place_id union select p.place_id, "
+        "p.linked_place_id from placex p join prec on p.place_id=prec.linked_place_id) select "
+        "place_id as parent_place_resolved from prec where linked_place_id is null limit 1) as "
+        "pres on true ";
 
   // load primary hierarchy
   {
@@ -180,17 +186,22 @@ int main(int argc, char *argv[])
             + "where linked_place_id IS NOT NULL and ST_Intersects(ST_GeomFromGeoJSON($1), "
               "geometry) order by admin_level",
         border);
-    size_t count = 0;
+    size_t count  = 0;
+    size_t failed = 0;
     for (const pqxx::row &row : r)
       {
         ++count;
         std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
-        hierarchy.add_linked_item(item);
+        if (!hierarchy.add_linked_item(item))
+          failed++;
         if (count % printout_step == 0)
           std::cout << "Imported linked records: " << count
                     << "; Root elements: " << hierarchy.get_root_count()
                     << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
       }
+    std::cout << "Imported linked records: " << count << " / failed to import: " << failed
+              << "; Root elements: " << hierarchy.get_root_count()
+              << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
   }
 
   // find missing parents for root nodes
@@ -210,6 +221,8 @@ int main(int argc, char *argv[])
         {
           std::cerr << "Missing parent with ID " << parent << " . Stopping import\n";
           hierarchy.print_root_with_parent_id(parent);
+          std::cerr << "\nSQL:\n" << base_query + "where place_id=" << parent << "\n";
+
           return -1;
         }
 

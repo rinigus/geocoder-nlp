@@ -41,18 +41,19 @@ void Hierarchy::add_item(std::shared_ptr<HierarchyItem> &item)
     }
 }
 
-void Hierarchy::add_linked_item(std::shared_ptr<HierarchyItem> &item)
+bool Hierarchy::add_linked_item(std::shared_ptr<HierarchyItem> &item)
 {
   hindex linked = item->linked_id();
   auto   tolink = m_items.find(linked);
   if (tolink == m_items.end())
     {
       std::cout << "Failed to find linked object " << linked << " required by " << item->id()
-                << ". Skipping linkage.";
-      return;
+                << ". Skipping linkage.\n";
+      return false;
     }
 
   tolink->second->add_linked(item);
+  return true;
 }
 
 void Hierarchy::cleanup()
