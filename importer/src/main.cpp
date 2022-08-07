@@ -208,8 +208,8 @@ int main(int argc, char *argv[])
 
       if (!found)
         {
-          std::cerr << "Missing parent with ID " << parent << ". Stopping import\n";
-          hierarchy.print(false);
+          std::cerr << "Missing parent with ID " << parent << " . Stopping import\n";
+          hierarchy.print_root_with_parent_id(parent);
           return -1;
         }
 

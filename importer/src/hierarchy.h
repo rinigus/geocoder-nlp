@@ -33,6 +33,7 @@ public:
   std::set<std::string> get_root_countries() const;
 
   void print(bool full = true) const;
+  void print_root_with_parent_id(hindex parent_id) const;
 
 private:
   std::deque<std::shared_ptr<HierarchyItem> > root_items() const;

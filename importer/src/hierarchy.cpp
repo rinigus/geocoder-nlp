@@ -183,3 +183,12 @@ void Hierarchy::print(bool full) const
     std::cout << c << " ";
   std::cout << "\n";
 }
+
+void Hierarchy::print_root_with_parent_id(hindex parent_id) const
+{
+  for (auto item : root_items())
+    {
+      if (item->parent_id() == parent_id)
+        item->print_item(0);
+    }
+}
