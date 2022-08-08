@@ -15,3 +15,7 @@
 *~
 
 /*.pro.user
+build/
+.vscode
+*.code-workspace
+CMakeLists.txt.user
