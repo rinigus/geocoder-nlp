@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     {
       std::cout << "Please specify PostgreSQL connection string using environment variable "
                 << GEOCODER_IMPORTER_POSTGRES << "\n";
-      return 0;
+      return -1;
     }
 
   std::cout << "Postgres connection: " << postgres_dblink << std::endl;
