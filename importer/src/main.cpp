@@ -112,7 +112,13 @@ int main(int argc, char *argv[])
   // load GeoJSON for surrounding (multi)polygon from poly.json
   std::string border;
   {
-    std::ifstream                  fin(polyjson);
+    std::ifstream fin(polyjson);
+    if (!fin)
+      {
+        std::cerr << "Failed to open " << polyjson << "\n";
+        return -2;
+      }
+
     std::istreambuf_iterator<char> begin(fin), end;
     std::string                    b(begin, end);
     border = b;
