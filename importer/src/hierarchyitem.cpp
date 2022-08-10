@@ -276,13 +276,13 @@ void HierarchyItem::print_item(unsigned int offset) const
   std::cout << "(" << m_my_index << " " << m_last_child_index << ": "
             << m_last_child_index - m_my_index << ": " << m_parent_id << ", " << m_country
             << ", osmid=" << m_osm_id << ")\n";
-  if (m_children.size())
-    std::cout << std::string(offset + 2, ' ') << "|\n";
 }
 
 void HierarchyItem::print_branch(unsigned int offset) const
 {
   print_item(offset);
+  if (m_children.size())
+    std::cout << std::string(offset + 2, ' ') << "|\n";
   for (auto c : m_children)
     c->print_branch(offset + 3);
 }

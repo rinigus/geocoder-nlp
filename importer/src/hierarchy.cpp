@@ -113,8 +113,44 @@ void Hierarchy::finalize()
       item->set_parent(0);
     }
 
-  std::cout << "Hierarchy: active items: " << index
-            << " / cleared items: " << m_items.size() - index << "\n";
+  std::cout << "Hierarchy: active items: " << index - 1
+            << " / cleared items: " << m_items.size() - (index - 1) << "\n";
+}
+
+void Hierarchy::check_indexing()
+{
+  for (auto itemp : m_items)
+    {
+      auto item = itemp.second;
+      if (item->keep() && !item->indexed())
+        {
+          std::cout << "\nItem is not included into hierarchy while it should be\n";
+          item->print_item(0);
+
+          std::cout << "\nItem part of hierarchy (child -> parent):\n" << item->id() << " ";
+          auto i = item;
+          for (auto parent = item->parent_id(); parent != 0; parent = i->parent_id())
+            {
+              if (m_items.find(parent) != m_items.end())
+                {
+                  std::cout << "\nCannot find parent with ID " << parent << "\n";
+                  break;
+                }
+
+              if (i->id() == item->id())
+                {
+                  std::cout << "\nCyclic branch detected\n";
+                  break;
+                }
+
+              i = m_items[parent];
+              std::cout << i->id() << " ";
+            }
+          std::cout << "\n\n";
+
+          throw std::runtime_error("Item is not included into hierarchy while it should be");
+        }
+    }
 }
 
 void Hierarchy::write(sqlite3pp::database &db) const

@@ -252,6 +252,7 @@ int main(int argc, char *argv[])
     }
 
   hierarchy.finalize();
+  hierarchy.check_indexing();
 
   txn.commit(); // finalize postgres transactions
 

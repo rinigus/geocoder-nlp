@@ -23,6 +23,7 @@ public:
   void set_country(const std::string &country, hindex id);
   void cleanup();
   void finalize();
+  void check_indexing();
   void write(sqlite3pp::database &db) const;
 
   size_t get_missing_count() const { return m_root.size(); }

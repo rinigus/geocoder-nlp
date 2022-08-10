@@ -21,6 +21,7 @@ public:
   hindex             parent_id() const { return m_parent_id; }
   const std::string &country() const { return m_country; }
   bool               keep() const;
+  bool               indexed() const { return m_my_index > 0; }
 
   const std::deque<std::shared_ptr<HierarchyItem> > &children() { return m_children; }
 
@@ -46,9 +47,9 @@ private:
   hindex m_id;
   hindex m_linked_id{ 0 };
   hindex m_parent_id;
-  sqlid  m_my_index;
-  sqlid  m_parent_index;
-  sqlid  m_last_child_index;
+  sqlid  m_my_index{ 0 };
+  sqlid  m_parent_index{ 0 };
+  sqlid  m_last_child_index{ 0 };
 
   std::string m_type;
   float       m_latitude;
