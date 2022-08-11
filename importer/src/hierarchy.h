@@ -23,7 +23,7 @@ public:
   void set_country(const std::string &country, hindex id);
   void cleanup();
   void finalize();
-  void check_indexing();
+  bool check_indexing();
   void write(sqlite3pp::database &db) const;
 
   size_t get_missing_count() const { return m_root.size(); }
@@ -32,6 +32,8 @@ public:
 
   hindex                get_next_nonzero_root_parent() const;
   std::set<std::string> get_root_countries() const;
+
+  std::set<hindex> get_failed_indexes() const { return m_index_check_failed; }
 
   void print(bool full = true) const;
   void print_root_with_parent_id(hindex parent_id) const;
@@ -43,6 +45,7 @@ private:
   std::map<hindex, std::shared_ptr<HierarchyItem> >            m_items;
   std::map<hindex, std::set<std::shared_ptr<HierarchyItem> > > m_root;
   std::deque<std::shared_ptr<HierarchyItem> >                  m_root_finalized;
+  std::set<hindex>                                             m_index_check_failed;
 };
 
 #endif

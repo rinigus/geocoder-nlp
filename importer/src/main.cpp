@@ -212,27 +212,26 @@ int main(int argc, char *argv[])
 
   // find missing parents for root nodes
   std::cout << "Fill missing hierarchies. Root size: " << hierarchy.get_root_count() << "\n";
-  for (hindex parent = hierarchy.get_next_nonzero_root_parent(); parent;)
+  for (hindex parent = hierarchy.get_next_nonzero_root_parent(); parent;
+       parent        = hierarchy.get_next_nonzero_root_parent())
     {
-      pqxx::result r     = txn.exec_params(base_query + "where place_id=$1", parent);
-      bool         found = false;
-      for (auto row : r)
+             pqxx::result r     = txn.exec_params(base_query + "where place_id=$1", parent);
+             bool         found = false;
+             for (auto row : r)
         {
-          std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
-          hierarchy.add_item(item);
-          found = true;
+                 std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
+                 hierarchy.add_item(item);
+                 found = true;
         }
 
       if (!found)
         {
-          std::cerr << "Missing parent with ID " << parent << " . Stopping import\n";
-          hierarchy.print_root_with_parent_id(parent);
-          std::cerr << "\nSQL:\n" << base_query + "where place_id=" << parent << "\n";
+                 std::cerr << "Missing parent with ID " << parent << " . Stopping import\n";
+                 hierarchy.print_root_with_parent_id(parent);
+                 std::cerr << "\nSQL:\n" << base_query + "where place_id=" << parent << "\n";
 
-          return -1;
+                 return -1;
         }
-
-      parent = hierarchy.get_next_nonzero_root_parent();
     }
 
   // remove all items from hierarchy that are not supposed to be there
@@ -258,7 +257,18 @@ int main(int argc, char *argv[])
     }
 
   hierarchy.finalize();
-  hierarchy.check_indexing();
+  if (!hierarchy.check_indexing())
+    {
+      std::set<hindex> problem = hierarchy.get_failed_indexes();
+      for (hindex index : problem)
+        txn.exec_params0("update placex set indexed_status=2 where place_id=$1", index);
+
+      txn.commit();
+
+      std::cout << "Requested to reindex Nominatim database (run nominatim --index) for "
+                << problem.size() << " records\n";
+      return -3;
+    }
 
   txn.commit(); // finalize postgres transactions
 

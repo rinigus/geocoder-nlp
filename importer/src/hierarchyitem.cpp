@@ -83,15 +83,26 @@ void HierarchyItem::load_skip_list(const std::string &fname)
   s_skip_types = load_list(fname);
 }
 
-bool HierarchyItem::keep() const
+void HierarchyItem::drop()
 {
+  m_dropped = true;
+}
+
+bool HierarchyItem::keep(bool verbose) const
+{
+  if (m_dropped)
+    return false;
+
   if (m_type.find_first_not_of(allowed_type_chars) != std::string::npos)
     {
-      std::cout << "Dropping " << m_type << "\n";
+      if (verbose)
+        std::cout << "Dropping " << m_type << "\n";
       return false;
     }
+
   if (s_skip_types.count(m_type) > 0)
     return false;
+
   return !m_name.empty() || s_priority_types.count(m_type) > 0;
 }
 
@@ -150,7 +161,7 @@ void HierarchyItem::set_parent(hindex parent, bool force)
   //     c->set_parent(m_id, force);
 }
 
-void HierarchyItem::cleanup_children(bool duplicate_only)
+void HierarchyItem::cleanup_children()
 {
   // as a result of this run, children that are supposed to be kept are staying in children
   // property. all disposed ones are still pointed to via Hierarchy map, but should not be accessed
@@ -193,10 +204,11 @@ void HierarchyItem::cleanup_children(bool duplicate_only)
                                   i->m_children.end());
           for (auto &i_children : i->m_children)
             i_children->set_parent(item->m_id, true);
+          i->drop();
         }
 
       if (had_duplicates)
-        item->cleanup_children(true);
+        item->cleanup_children();
 
       m_children = children;
     }
@@ -271,8 +283,7 @@ void HierarchyItem::print_item(unsigned int offset) const
   std::cout << std::string(offset, ' ') << "- " << m_id << " ";
   if (!m_housenumber.empty())
     std::cout << "house " << m_housenumber << " ";
-  for (const auto &i : m_data_name)
-    std::cout << i.first << ": " << i.second << " ";
+  std::cout << m_name << " ";
   std::cout << "(" << m_my_index << " " << m_last_child_index << ": "
             << m_last_child_index - m_my_index << ": " << m_parent_id << ", " << m_country
             << ", osmid=" << m_osm_id << ")\n";

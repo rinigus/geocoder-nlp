@@ -20,15 +20,18 @@ public:
   hindex             linked_id() const { return m_linked_id; }
   hindex             parent_id() const { return m_parent_id; }
   const std::string &country() const { return m_country; }
-  bool               keep() const;
+  bool               keep(bool verbose = true) const;
   bool               indexed() const { return m_my_index > 0; }
+
+  void drop();
+  bool dropped() const { return m_dropped; }
 
   const std::deque<std::shared_ptr<HierarchyItem> > &children() { return m_children; }
 
   void  add_child(std::shared_ptr<HierarchyItem> child);
   void  add_linked(std::shared_ptr<HierarchyItem> linked);
   void  set_parent(hindex parent, bool force = false);
-  void  cleanup_children(bool duplicate_only = false);
+  void  cleanup_children();
   sqlid index(sqlid idx, sqlid parent);
   void  write(sqlite3pp::database &db) const;
 
@@ -50,6 +53,7 @@ private:
   sqlid  m_my_index{ 0 };
   sqlid  m_parent_index{ 0 };
   sqlid  m_last_child_index{ 0 };
+  bool   m_dropped{ false };
 
   std::string m_type;
   float       m_latitude;

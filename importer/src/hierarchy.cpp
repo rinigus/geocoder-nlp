@@ -114,43 +114,56 @@ void Hierarchy::finalize()
     }
 
   std::cout << "Hierarchy: active items: " << index - 1
-            << " / cleared items: " << m_items.size() - (index - 1) << "\n";
+            << " / cleared items: " << m_items.size() - (index - 1) << std::flush;
 }
 
-void Hierarchy::check_indexing()
+bool Hierarchy::check_indexing()
 {
+  std::cout << "Check whether all items are indexed\n";
+
+  m_index_check_failed.clear();
+  bool isok = true;
   for (auto itemp : m_items)
     {
       auto item = itemp.second;
-      if (item->keep() && !item->indexed())
+      if (item->keep(false) && !item->indexed())
         {
+          isok = false;
           std::cout << "\nItem is not included into hierarchy while it should be\n";
           item->print_item(0);
 
-          std::cout << "\nItem part of hierarchy (child -> parent):\n" << item->id() << " ";
-          auto i = item;
+          std::cout << "\nItem part of hierarchy (child -> parent):\n";
+
+          auto             i = item;
+          std::set<hindex> ids;
           for (auto parent = item->parent_id(); parent != 0; parent = i->parent_id())
             {
-              if (m_items.find(parent) != m_items.end())
+              if (m_items.find(parent) == m_items.end())
                 {
                   std::cout << "\nCannot find parent with ID " << parent << "\n";
                   break;
                 }
 
-              if (i->id() == item->id())
+              i = m_items[parent];
+              i->print_item(0);
+
+              if (ids.count(i->id()) > 0)
                 {
                   std::cout << "\nCyclic branch detected\n";
+                  m_index_check_failed.insert(ids.begin(), ids.end());
                   break;
                 }
-
-              i = m_items[parent];
-              std::cout << i->id() << " ";
+              ids.insert(i->id());
             }
           std::cout << "\n\n";
-
-          throw std::runtime_error("Item is not included into hierarchy while it should be");
         }
     }
+
+  if (isok)
+    std::cout << "Items indexing check passed\n";
+  else
+    std::cout << "Items indexing check FAILED\n";
+  return isok;
 }
 
 void Hierarchy::write(sqlite3pp::database &db) const
