@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 
       txn.commit();
 
-      std::cout << "Requested to reindex Nominatim database (run nominatim --index) for "
+      std::cout << "Requested to reindex Nominatim database (run nominatim index) for "
                 << problem.size() << " records\n";
       return -3;
     }
