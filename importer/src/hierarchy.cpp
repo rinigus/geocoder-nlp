@@ -114,10 +114,10 @@ void Hierarchy::finalize()
     }
 
   std::cout << "Hierarchy: active items: " << index - 1
-            << " / cleared items: " << m_items.size() - (index - 1) << std::flush;
+            << " / cleared items: " << m_items.size() - (index - 1) << "\n";
 }
 
-bool Hierarchy::check_indexing()
+bool Hierarchy::check_indexing(bool verbose)
 {
   std::cout << "Check whether all items are indexed\n";
 
@@ -129,10 +129,13 @@ bool Hierarchy::check_indexing()
       if (item->keep(false) && !item->indexed())
         {
           isok = false;
-          std::cout << "\nItem is not included into hierarchy while it should be\n";
-          item->print_item(0);
+          if (verbose)
+            {
+              std::cout << "\nItem is not included into hierarchy while it should be\n";
+              item->print_item(0);
 
-          std::cout << "\nItem part of hierarchy (child -> parent):\n";
+              std::cout << "\nItem part of hierarchy (child -> parent):\n";
+            }
 
           auto             i = item;
           std::set<hindex> ids;
@@ -140,16 +143,21 @@ bool Hierarchy::check_indexing()
             {
               if (m_items.find(parent) == m_items.end())
                 {
+                  // those are not expected to be many, keeping message
                   std::cout << "\nCannot find parent with ID " << parent << "\n";
                   break;
                 }
 
               i = m_items[parent];
-              i->print_item(0);
+
+              if (verbose)
+                i->print_item(0);
 
               if (ids.count(i->id()) > 0)
                 {
-                  std::cout << "\nCyclic branch detected\n";
+                  if (verbose)
+                    std::cout << "\nCyclic branch detected\n";
+
                   m_index_check_failed.insert(ids.begin(), ids.end());
                   break;
                 }
