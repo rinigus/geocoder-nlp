@@ -153,17 +153,22 @@ int main(int argc, char *argv[])
   pqxx::work       txn{ pgc };
 
   const std::string base_query
-      = "select place_id, linked_place_id, parent_place_resolved as parent_place_id, country_code, "
-        "class, type, "
-        "hstore_to_json(name) as name, hstore_to_json(extratags) as extra, "
-        "COALESCE(address->'housenumber',housenumber) AS housenumber, postcode, ST_X(centroid) as "
-        "longitude, ST_Y(centroid) as latitude, osm_id "
-        "from placex pl left join lateral "
-        "(with recursive prec as (select place_id, linked_place_id "
-        "from placex where pl.parent_place_id=placex.place_id union select p.place_id, "
-        "p.linked_place_id from placex p join prec on p.place_id=prec.linked_place_id) select "
-        "place_id as parent_place_resolved from prec where linked_place_id is null limit 1) as "
-        "pres on true ";
+      = R"SQL(
+select place_id, linked_place_id, parent_place_resolved as parent_place_id, country_code, class, type,
+hstore_to_json(name) as name, hstore_to_json(extratags) as extra,
+COALESCE(address->'housenumber',housenumber) AS housenumber,
+postcode, ST_X(centroid) as longitude, ST_Y(centroid) as latitude,
+osm_type, osm_id
+from placex pl
+left join lateral
+(select address_place_id from place_addressline a where a.place_id=pl.place_id
+order by cached_rank_address desc limit 1) as a on true
+left join lateral
+(with recursive prec as
+(select place_id, linked_place_id from placex where COALESCE(a.address_place_id,pl.parent_place_id)=placex.place_id
+union select p.place_id, p.linked_place_id from placex p join prec on p.place_id=prec.linked_place_id)
+select place_id as parent_place_resolved from prec where linked_place_id is null limit 1) as pres on true
+      )SQL";
 
   // load primary hierarchy
   {
