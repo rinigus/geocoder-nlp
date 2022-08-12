@@ -163,7 +163,8 @@ bool Hierarchy::check_indexing(bool verbose)
                 }
               ids.insert(i->id());
             }
-          std::cout << "\n\n";
+          if (verbose)
+            std::cout << "\n\n";
         }
     }
 
