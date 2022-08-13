@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
   std::string postal_address_parser_dir;
   std::string type_priority_list;
   std::string type_skip_list;
+  std::string log_errors_to_file;
   bool        verbose_address_expansion = false;
 
   {
@@ -59,6 +60,9 @@ int main(int argc, char *argv[])
         "skip", po::value<std::string>(&type_skip_list),
         "File with OSM tags for locations that should be dropped even if there is a name "
         "associated with the location");
+    generic.add_options()(
+        "log-errors-to-file", po::value<std::string>(&log_errors_to_file),
+        "Log errors to file and continue import. File name given as an argument of this option.");
     generic.add_options()("verbose", "Verbose address expansion");
 
     po::options_description hidden("Hidden options");
@@ -154,7 +158,7 @@ int main(int argc, char *argv[])
 
   const std::string base_query
       = R"SQL(
-select place_id, linked_place_id, parent_place_resolved as parent_place_id, country_code, class, type,
+select pl.place_id, linked_place_id, parent_place_resolved as parent_place_id, country_code, class, type,
 hstore_to_json(name) as name, hstore_to_json(extratags) as extra,
 COALESCE(address->'housenumber',housenumber) AS housenumber,
 postcode, ST_X(centroid) as longitude, ST_Y(centroid) as latitude,
@@ -162,7 +166,7 @@ osm_type, osm_id
 from placex pl
 left join lateral
 (select address_place_id from place_addressline a where a.place_id=pl.place_id
-order by cached_rank_address desc limit 1) as a on true
+order by cached_rank_address desc, fromarea desc, distance asc limit 1) as a on true
 left join lateral
 (with recursive prec as
 (select place_id, linked_place_id from placex where COALESCE(a.address_place_id,pl.parent_place_id)=placex.place_id
@@ -220,7 +224,7 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
   for (hindex parent = hierarchy.get_next_nonzero_root_parent(); parent;
        parent        = hierarchy.get_next_nonzero_root_parent())
     {
-             pqxx::result r     = txn.exec_params(base_query + "where place_id=$1", parent);
+             pqxx::result r     = txn.exec_params(base_query + "where pl.place_id=$1", parent);
              bool         found = false;
              for (auto row : r)
         {
@@ -233,7 +237,7 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
         {
                  std::cerr << "Missing parent with ID " << parent << " . Stopping import\n";
                  hierarchy.print_root_with_parent_id(parent);
-                 std::cerr << "\nSQL:\n" << base_query + "where place_id=" << parent << "\n";
+                 std::cerr << "\nSQL:\n" << base_query + "where pl.place_id=" << parent << "\n";
 
                  return -1;
         }
@@ -272,7 +276,14 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
 
       std::cout << "Requested to reindex Nominatim database (run nominatim index) for "
                 << problem.size() << " records\n";
-      return -3;
+
+      if (log_errors_to_file.empty())
+        return -3;
+      else
+        {
+          std::ofstream flog(log_errors_to_file);
+          flog << problem.size() << " records were not indexed while they should have been.\n";
+        }
     }
 
   txn.commit(); // finalize postgres transactions
