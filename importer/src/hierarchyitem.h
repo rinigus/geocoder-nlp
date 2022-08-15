@@ -31,7 +31,7 @@ public:
   void  add_child(std::shared_ptr<HierarchyItem> child);
   void  add_linked(std::shared_ptr<HierarchyItem> linked);
   void  set_parent(hindex parent, bool force = false);
-  void  cleanup_children();
+  void  cleanup_children(bool duplicate_only = false);
   sqlid index(sqlid idx, sqlid parent);
   void  write(sqlite3pp::database &db) const;
 
@@ -42,18 +42,22 @@ public:
   static void load_priority_list(const std::string &fname);
   static void load_skip_list(const std::string &fname);
 
+  static std::set<std::string> get_priority_list() { return s_priority_types; }
+
 protected:
-  void set_names();
-  bool is_duplicate(std::shared_ptr<HierarchyItem> item) const;
+  void        set_names();
+  bool        is_duplicate(std::shared_ptr<HierarchyItem> item) const;
+  std::string key() const;
 
 private:
-  hindex m_id;
-  hindex m_linked_id{ 0 };
-  hindex m_parent_id;
-  sqlid  m_my_index{ 0 };
-  sqlid  m_parent_index{ 0 };
-  sqlid  m_last_child_index{ 0 };
-  bool   m_dropped{ false };
+  hindex      m_id;
+  hindex      m_linked_id{ 0 };
+  hindex      m_parent_id;
+  sqlid       m_my_index{ 0 };
+  sqlid       m_parent_index{ 0 };
+  sqlid       m_last_child_index{ 0 };
+  bool        m_dropped{ false };
+  std::string m_key;
 
   std::string m_type;
   float       m_latitude;

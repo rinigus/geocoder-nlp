@@ -1,8 +1,10 @@
 #include "hierarchyitem.h"
 #include "utils.h"
 
+#include <boost/algorithm/string/trim.hpp>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 std::set<std::string> HierarchyItem::s_priority_types;
@@ -27,26 +29,7 @@ HierarchyItem::HierarchyItem(const pqxx::row &row)
   m_data_extra = parse_to_map(row["extra"].as<std::string>(""));
 
   set_names();
-}
-
-// trim from start (in place)
-static inline void ltrim(std::string &s)
-{
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) { return !std::isspace(ch); }));
-}
-
-// trim from end (in place)
-static inline void rtrim(std::string &s)
-{
-  s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) { return !std::isspace(ch); }).base(),
-          s.end());
-}
-
-// trim from both ends (in place)
-static inline void trim(std::string &s)
-{
-  ltrim(s);
-  rtrim(s);
+  m_key = key();
 }
 
 static std::set<std::string> load_list(const std::string &fname)
@@ -65,7 +48,7 @@ static std::set<std::string> load_list(const std::string &fname)
 
   while (std::getline(f, line))
     {
-      trim(line);
+      boost::algorithm::trim(line);
       if (!line.empty())
         d.insert(line);
     }
@@ -121,6 +104,25 @@ bool HierarchyItem::is_duplicate(std::shared_ptr<HierarchyItem> item) const
   return false;
 }
 
+std::string HierarchyItem::key() const
+{
+  std::stringstream ss;
+
+  ss << m_name << "-" << m_name_extra << "-" << m_postcode << "-";
+
+  if (m_type.rfind("building", 0) == 0)
+    ss << "building";
+  else if (m_type.rfind("highway", 0) == 0)
+    ss << "highway";
+  else
+    ss << m_type;
+
+  if (s_priority_types.count(m_type) > 0)
+    ss << "-" << m_id;
+
+  return ss.str();
+}
+
 void HierarchyItem::add_child(std::shared_ptr<HierarchyItem> child)
 {
   m_children.push_back(child);
@@ -161,57 +163,55 @@ void HierarchyItem::set_parent(hindex parent, bool force)
   //     c->set_parent(m_id, force);
 }
 
-void HierarchyItem::cleanup_children()
+void HierarchyItem::cleanup_children(bool duplicate_only)
 {
   // as a result of this run, children that are supposed to be kept are staying in children
   // property. all disposed ones are still pointed to via Hierarchy map, but should not be accessed
   // while moving along hierarchy for indexing or writing it
-  {
-    std::deque<std::shared_ptr<HierarchyItem> > children;
-    for (auto item : m_children)
-      {
-        item->cleanup_children();
-        if (item->keep())
-          children.push_back(item);
-        else
-          children.insert(children.end(), item->m_children.begin(), item->m_children.end());
-      }
-    m_children = children;
-  }
-
-  // check for duplicates
-  bool had_duplicates = false;
-  for (size_t child_index = 0; child_index < m_children.size(); ++child_index)
+  if (!duplicate_only)
     {
-      std::shared_ptr<HierarchyItem>              item = m_children[child_index];
       std::deque<std::shared_ptr<HierarchyItem> > children;
-      std::deque<std::shared_ptr<HierarchyItem> > duplicates;
-
-      children.insert(children.end(), m_children.begin(), m_children.begin() + child_index + 1);
-
-      for (size_t i = child_index + 1; i < m_children.size(); ++i)
-        if (m_children[i]->is_duplicate(item))
-          duplicates.push_back(m_children[i]);
-        else
-          children.push_back(m_children[i]);
-
-      // merge duplicates
-      for (auto &i : duplicates)
+      for (auto item : m_children)
         {
-          had_duplicates = true;
-          item->add_linked(i);
-          item->m_children.insert(item->m_children.end(), i->m_children.begin(),
-                                  i->m_children.end());
-          for (auto &i_children : i->m_children)
-            i_children->set_parent(item->m_id, true);
-          i->drop();
+          item->cleanup_children();
+          if (item->keep())
+            children.push_back(item);
+          else
+            children.insert(children.end(), item->m_children.begin(), item->m_children.end());
         }
-
-      if (had_duplicates)
-        item->cleanup_children();
-
       m_children = children;
     }
+
+  // print out items with huge amount of children
+  if (m_children.size() > 10000)
+    {
+      print_item(0);
+      m_children[0]->print_item(3);
+    }
+
+  // check for duplicates
+  std::map<std::string, std::shared_ptr<HierarchyItem> > children;
+  for (std::shared_ptr<HierarchyItem> item : m_children)
+    {
+      std::string key       = item->key();
+      auto        main_pair = children.find(key);
+      if (main_pair != children.end())
+        {
+          std::shared_ptr<HierarchyItem> main = main_pair->second;
+          main->m_children.insert(main->m_children.end(), item->m_children.begin(),
+                                  item->m_children.end());
+          for (auto &i_children : item->m_children)
+            i_children->set_parent(main->m_id, true);
+          item->drop();
+          main->cleanup_children(true);
+        }
+      else
+        children[key] = item;
+    }
+
+  m_children.clear();
+  for (auto &iter : children)
+    m_children.push_back(iter.second);
 
   // set parent, forced
   for (auto item : m_children)
@@ -284,9 +284,8 @@ void HierarchyItem::print_item(unsigned int offset) const
   if (!m_housenumber.empty())
     std::cout << "house " << m_housenumber << " ";
   std::cout << m_name << " ";
-  std::cout << "(" << m_my_index << " " << m_last_child_index << ": "
-            << m_last_child_index - m_my_index << ": " << m_parent_id << ", " << m_country
-            << ", osmid=" << m_osm_id << ")\n";
+  std::cout << "(" << m_my_index << " " << m_last_child_index << ": " << m_children.size() << ": "
+            << m_parent_id << ", " << m_country << ", osmid=" << m_osm_id << ", " << m_key << ")\n";
 }
 
 void HierarchyItem::print_branch(unsigned int offset) const
