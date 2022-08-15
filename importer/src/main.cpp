@@ -9,6 +9,7 @@
 #include "normalization.h"
 
 #include <algorithm>
+#include <boost/algorithm/string/join.hpp>
 #include <boost/program_options.hpp>
 #include <cctype>
 #include <cstdlib>
@@ -176,16 +177,28 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
 
   // load primary hierarchy
   {
+    std::vector<std::string> types_enclosed;
+    for (const auto i : HierarchyItem::get_priority_list())
+      types_enclosed.push_back("'" + i + "'");
+
+    std::string priority_types_condition
+        = "class || '_' || type IN (" + boost::algorithm::join(types_enclosed, ",") + ")";
+
     pqxx::result r = txn.exec_params(
         base_query
-            + "where linked_place_id IS NULL and ST_Intersects(ST_GeomFromGeoJSON($1), "
-              "geometry) order by admin_level",
+            + "where linked_place_id IS NULL and "
+              "ST_Intersects(ST_GeomFromGeoJSON($1), geometry) and "
+              "class ~ '^[a-z_-]+$' and (type~'^[a-z_-]+$' or ((type<>'') is not true)) and "
+              "(name->'name'<>'' or housenumber<>'' or "
+            + priority_types_condition + ")",
         border);
     size_t count = 0;
     for (const pqxx::row &row : r)
       {
         ++count;
         std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
+        if (!item->keep())
+          continue;
         hierarchy.add_item(item);
         if (count % printout_step == 0)
           std::cout << "Imported records: " << count
@@ -199,7 +212,7 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
     pqxx::result r = txn.exec_params(
         base_query
             + "where linked_place_id IS NOT NULL and ST_Intersects(ST_GeomFromGeoJSON($1), "
-              "geometry) order by admin_level",
+              "geometry)",
         border);
     size_t count  = 0;
     size_t failed = 0;
