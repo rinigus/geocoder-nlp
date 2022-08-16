@@ -87,7 +87,7 @@ bool HierarchyItem::keep(bool verbose) const
   if (s_skip_types.count(m_type) > 0)
     return false;
 
-  return !m_name.empty() || s_priority_types.count(m_type) > 0;
+  return !m_name.empty() || !m_postcode.empty() || s_priority_types.count(m_type) > 0;
 }
 
 bool HierarchyItem::is_duplicate(std::shared_ptr<HierarchyItem> item) const

@@ -232,6 +232,46 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
               << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
   }
 
+  // load centroids for postal codes
+  const std::string postal_codes_query
+      = R"SQL(
+select pc.place_id, NULL as linked_place_id, parent_place_resolved as parent_place_id, country_code, 'postal' as class, 'code' as type,
+NULL as name, NULL as extra, NULL as housenumber,
+postcode, ST_X(geometry) as longitude, ST_Y(geometry) as latitude,
+NULL as osm_type, NULL as osm_id
+from location_postcode pc
+left join lateral
+(with recursive prec as
+(select place_id, linked_place_id from placex where pc.parent_place_id=placex.place_id
+union select p.place_id, p.linked_place_id from placex p join prec on p.place_id=prec.linked_place_id)
+select place_id as parent_place_resolved from prec where linked_place_id is null limit 1) as pres on true
+      )SQL";
+  {
+    pqxx::result r = txn.exec_params(postal_codes_query
+                                         + "where "
+                                           "ST_Intersects(ST_GeomFromGeoJSON($1), geometry)",
+                                     border);
+
+    size_t count = 0;
+    for (const pqxx::row &row : r)
+      {
+        ++count;
+        std::shared_ptr<HierarchyItem> item = std::make_shared<HierarchyItem>(row);
+        if (!item->keep())
+          {
+            std::cout << "Dropping postcode?"
+                      << "\n";
+            item->print_item(0);
+            continue;
+          }
+        hierarchy.add_item(item);
+        if (count % printout_step == 0)
+          std::cout << "Imported postal codes: " << count
+                    << "; Root elements: " << hierarchy.get_root_count()
+                    << "; Missing parents: " << hierarchy.get_missing_count() << std::endl;
+      }
+  }
+
   // find missing parents for root nodes
   std::cout << "Fill missing hierarchies. Root size: " << hierarchy.get_root_count() << "\n";
   for (hindex parent = hierarchy.get_next_nonzero_root_parent(); parent;
