@@ -1,4 +1,5 @@
 #include "hierarchyitem.h"
+#include "postal.h"
 #include "utils.h"
 
 #include <boost/algorithm/string/trim.hpp>
@@ -20,7 +21,7 @@ HierarchyItem::HierarchyItem(const pqxx::row &row)
   m_country     = row["country_code"].as<std::string>("");
   m_type        = geocoder_type(row["class"].as<std::string>(""), row["type"].as<std::string>(""));
   m_housenumber = row["housenumber"].as<std::string>("");
-  m_postcode    = row["postcode"].as<std::string>("");
+  m_postcode    = GeoNLP::Postal::normalize_postalcode(row["postcode"].as<std::string>(""));
   m_latitude    = row["latitude"].as<float>(0);
   m_longitude   = row["longitude"].as<float>(0);
   m_osm_id      = row["osm_id"].as<uint64_t>(0);
