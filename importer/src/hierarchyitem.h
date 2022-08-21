@@ -68,6 +68,7 @@ private:
   std::string m_housenumber;
   std::string m_name;
   std::string m_name_extra;
+  int         m_search_rank;
 
   std::map<std::string, std::string> m_data_name;
   std::map<std::string, std::string> m_data_extra;

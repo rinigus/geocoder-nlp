@@ -25,6 +25,7 @@ HierarchyItem::HierarchyItem(const pqxx::row &row)
   m_latitude    = row["latitude"].as<float>(0);
   m_longitude   = row["longitude"].as<float>(0);
   m_osm_id      = row["osm_id"].as<uint64_t>(0);
+  m_search_rank = row["search_rank"].as<int>(0);
 
   m_data_name  = parse_to_map(row["name"].as<std::string>(""));
   m_data_extra = parse_to_map(row["extra"].as<std::string>(""));
@@ -243,11 +244,13 @@ void HierarchyItem::write(sqlite3pp::database &db) const
   std::string website = get_with_def(m_data_extra, "website");
 
   {
-    sqlite3pp::command cmd(db, "INSERT INTO object_primary_tmp (id, postgres_id, name, name_extra, "
-                               "name_en, phone, postal_code, website, parent, longitude, "
-                               "latitude) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    sqlite3pp::command cmd(db,
+                           "INSERT INTO object_primary_tmp (id, postgres_id, name, name_extra, "
+                           "name_en, phone, postal_code, website, parent, longitude, "
+                           "latitude, search_rank) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
     cmd.binder() << m_my_index << (int)m_id << m_name << m_name_extra << name_en << phone
-                 << m_postcode << website << m_parent_index << m_longitude << m_latitude;
+                 << m_postcode << website << m_parent_index << m_longitude << m_latitude
+                 << m_search_rank;
     if (cmd.execute() != SQLITE_OK)
       std::cerr << "WriteSQL : error inserting primary data for " << m_id << ", " << m_my_index
                 << "\n";

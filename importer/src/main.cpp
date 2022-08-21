@@ -159,12 +159,17 @@ int main(int argc, char *argv[])
 
   const std::string base_query
       = R"SQL(
-select pl.place_id, linked_place_id, parent_place_resolved as parent_place_id, country_code, class, type,
+select pl.place_id, linked_place_id, parent_place_resolved as parent_place_id, pl.country_code, class, type,
 hstore_to_json(name) as name, hstore_to_json(extratags) as extra,
 COALESCE(address->'housenumber',housenumber) AS housenumber,
-postcode, ST_X(centroid) as longitude, ST_Y(centroid) as latitude,
+postcode, ST_X(pl.centroid) as longitude, ST_Y(pl.centroid) as latitude,
+CASE
+WHEN sname.importance IS NOT NULL THEN (100*(1-sname.importance))::int
+ELSE 100 + pl.rank_search
+END AS search_rank,
 osm_type, osm_id
 from placex pl
+left join search_name as sname on sname.place_id=pl.place_id
 left join lateral
 (select address_place_id from place_addressline a where a.place_id=pl.place_id
 order by cached_rank_address desc, fromarea desc, distance asc limit 1) as a on true
@@ -238,6 +243,7 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
 select pc.place_id, NULL as linked_place_id, parent_place_resolved as parent_place_id, country_code, 'postal' as class, 'code' as type,
 NULL as name, NULL as extra, NULL as housenumber,
 postcode, ST_X(geometry) as longitude, ST_Y(geometry) as latitude,
+100 AS search_rank,
 NULL as osm_type, NULL as osm_id
 from location_postcode pc
 left join lateral
@@ -306,7 +312,7 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
   for (std::string country : hierarchy.get_root_countries())
     {
       for (auto row : txn.exec_params(
-               base_query + "where rank_address = 4 and country_code = $1 limit 1", country))
+               base_query + "where pl.rank_address = 4 and pl.country_code = $1 limit 1", country))
         {
           hindex id = row["place_id"].as<hindex>(0);
           if (!hierarchy.has_item(id))
@@ -364,6 +370,7 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
   db.execute("CREATE " TEMPORARY " TABLE object_primary_tmp ("
              "id INTEGER PRIMARY KEY AUTOINCREMENT, postgres_id INTEGER, name TEXT, name_extra "
              "TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, parent INTEGER, "
+             "search_rank INTEGER, "
              "latitude REAL, longitude REAL)");
   db.execute("CREATE " TEMPORARY " TABLE object_type_tmp (prim_id INTEGER, type TEXT NOT NULL, "
              "FOREIGN KEY (prim_id) REFERENCES objects_primary_tmp(id))");
@@ -385,13 +392,14 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
   db.execute("CREATE " TEMPORARY
              " TABLE object_primary_tmp2 (id INTEGER PRIMARY KEY AUTOINCREMENT, "
              "name TEXT, name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website "
-             "TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, boxstr TEXT, "
+             "TEXT, parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, "
+             "search_rank INTEGER, boxstr TEXT, "
              "FOREIGN KEY (type_id) REFERENCES type(id))");
 
   db.execute("INSERT INTO object_primary_tmp2 (id, name, name_extra, name_en, phone, postal_code, "
-             "website, parent, type_id, latitude, longitude, boxstr) "
+             "website, parent, type_id, latitude, longitude, search_rank, boxstr) "
              "SELECT p.id, p.name, p.name_extra, p.name_en, p.phone, p.postal_code, p.website, "
-             "p.parent, type.id, p.latitude, p.longitude, "
+             "p.parent, type.id, p.latitude, p.longitude, p.search_rank, "
              // LINE BELOW DETERMINES ROUNDING USED FOR BOXES
              "CAST(CAST(p.latitude*100 AS INTEGER) AS TEXT) || ',' || CAST(CAST(p.longitude*100 AS "
              "INTEGER) AS TEXT) "
@@ -404,13 +412,15 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
 
   db.execute("CREATE TABLE object_primary (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, "
              "name_extra TEXT, name_en TEXT, phone TEXT, postal_code TEXT, website TEXT, "
-             "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, box_id INTEGER, "
+             "parent INTEGER, type_id INTEGER, latitude REAL, longitude REAL, search_rank INTEGER, "
+             "box_id INTEGER, "
              "FOREIGN KEY (type_id) REFERENCES type(id))");
   db.execute(
       "INSERT INTO object_primary (id, name, name_extra, name_en, phone, postal_code, website, "
-      "parent, type_id, latitude, longitude, box_id) "
+      "parent, type_id, latitude, longitude, search_rank, box_id) "
       "SELECT o.id, name, name_extra, name_en, phone, postal_code, website, parent, type_id, "
-      "latitude, longitude, b.id FROM object_primary_tmp2 o JOIN boxids b ON o.boxstr=b.boxstr");
+      "latitude, longitude, search_rank, b.id FROM object_primary_tmp2 o JOIN boxids b ON "
+      "o.boxstr=b.boxstr");
 
   db.execute("DROP INDEX IF EXISTS idx_object_primary_box");
   db.execute("CREATE INDEX idx_object_primary_box ON object_primary (box_id)");
