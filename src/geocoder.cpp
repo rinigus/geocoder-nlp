@@ -10,7 +10,7 @@
 
 using namespace GeoNLP;
 
-const int    GeoNLP::Geocoder::version{ 5 };
+const int    GeoNLP::Geocoder::version{ 6 };
 const size_t GeoNLP::Geocoder::num_languages{ 2 }; // 1 (default) + 1 (english)
 
 // typedef boost::geometry::model::point< double, 2,
@@ -245,12 +245,13 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query,
           r.type = get_type(r.id);
           get_features(r);
 
-          sqlite3pp::query qry(m_db, "SELECT latitude, longitude FROM object_primary WHERE id=?");
+          sqlite3pp::query qry(
+              m_db, "SELECT latitude, longitude, search_rank FROM object_primary WHERE id=?");
           qry.bind(1, r.id);
           for (auto v : qry)
             {
               // only one entry is expected
-              v.getter() >> r.latitude >> r.longitude;
+              v.getter() >> r.latitude >> r.longitude >> r.search_rank;
               break;
             }
         }
@@ -611,7 +612,8 @@ bool Geocoder::search_nearby(const std::vector<std::string> &name_query,
   try
     {
       std::ostringstream qtxt;
-      qtxt << "SELECT o.id, o.name, o.name_extra, o.name_en, t.name, o.latitude, o.longitude "
+      qtxt << "SELECT o.id, o.name, o.name_extra, o.name_en, t.name, o.latitude, o.longitude, "
+              "o.search_rank "
            << "FROM object_primary o "
            << "JOIN type t ON o.type_id=t.id "
            << "JOIN object_primary_rtree ON (o.box_id = object_primary_rtree.id) "
@@ -649,7 +651,8 @@ bool Geocoder::search_nearby(const std::vector<std::string> &name_query,
           char const *name, *name_extra, *name_en;
           std::string type;
           double      lat, lon, distance;
-          v.getter() >> id >> name >> name_extra >> name_en >> type >> lat >> lon;
+          int         search_rank;
+          v.getter() >> id >> name >> name_extra >> name_en >> type >> lat >> lon >> search_rank;
 
           // check if distance is ok. note that the distance is expected
           // to be small (on the scale of the planet)
@@ -701,6 +704,7 @@ bool Geocoder::search_nearby(const std::vector<std::string> &name_query,
           r.latitude        = lat;
           r.longitude       = lon;
           r.distance        = distance;
+          r.search_rank     = search_rank;
           r.levels_resolved = 1; // not used in this search
 
           result.push_back(r);
@@ -799,7 +803,7 @@ bool Geocoder::search_nearby(const std::vector<std::string> &name_query,
           {
             std::ostringstream qtxt;
             qtxt << "SELECT o.id, o.name, o.name_extra, o.name_en, t.name, "
-                 << "o.latitude, o.longitude "
+                 << "o.latitude, o.longitude, o.search_rank "
                  << "FROM object_primary o "
                  << "JOIN type t ON o.type_id=t.id "
                  << "WHERE ";
@@ -837,7 +841,9 @@ bool Geocoder::search_nearby(const std::vector<std::string> &name_query,
                 char const *name, *name_extra, *name_en;
                 std::string type;
                 double      lat, lon, distance;
-                v.getter() >> id >> name >> name_extra >> name_en >> type >> lat >> lon;
+                int         search_rank;
+                v.getter() >> id >> name >> name_extra >> name_en >> type >> lat >> lon
+                    >> search_rank;
 
                 // check if distance is ok using earth as a plane approximation around the line
                 {
@@ -918,6 +924,7 @@ bool Geocoder::search_nearby(const std::vector<std::string> &name_query,
                 r.latitude        = lat;
                 r.longitude       = lon;
                 r.distance        = distance;
+                r.search_rank     = search_rank;
                 r.levels_resolved = 1; // not used in this search
 
                 result.push_back(r);

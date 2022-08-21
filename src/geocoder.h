@@ -32,12 +32,13 @@ public:
     std::string   website;
     size_t        levels_resolved;
     size_t        admin_levels = 0;
+    double        search_rank;
 
     bool operator<(const GeoResult &i) const
     {
-      return (admin_levels < i.admin_levels
-              || (admin_levels == i.admin_levels && address.length() < i.address.length())
-              || (admin_levels == i.admin_levels && address.length() == i.address.length()
+      return (search_rank < i.search_rank
+              || (search_rank == i.search_rank && address.length() < i.address.length())
+              || (search_rank == i.search_rank && address.length() == i.address.length()
                   && address < i.address));
     }
   };

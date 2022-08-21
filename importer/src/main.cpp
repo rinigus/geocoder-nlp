@@ -164,8 +164,8 @@ hstore_to_json(name) as name, hstore_to_json(extratags) as extra,
 COALESCE(address->'housenumber',housenumber) AS housenumber,
 postcode, ST_X(pl.centroid) as longitude, ST_Y(pl.centroid) as latitude,
 CASE
-WHEN sname.importance IS NOT NULL THEN (100*(1-sname.importance))::int
-ELSE 100 + pl.rank_search
+WHEN sname.importance IS NOT NULL THEN (1000*(1-sname.importance))::int
+ELSE 1000 + pl.rank_search
 END AS search_rank,
 osm_type, osm_id
 from placex pl
