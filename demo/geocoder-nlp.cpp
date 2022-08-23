@@ -32,6 +32,7 @@ int main(int argc, char *argv[])
   // postal.add_language("et");
   // postal.add_language("en");
   postal.set_initialize_every_call(true);
+  postal.set_use_primitive(false);
 
   postal.parse(query, parsed_query, nonorm);
 
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
 
   Geocoder geo(argv[1]);
   geo.set_max_queries_per_hierarchy(30);
-  geo.set_max_results(25);
+  geo.set_max_results(10);
   // geo.set_result_language("en");
 
   std::vector<Geocoder::GeoResult> result;
@@ -81,7 +82,7 @@ int main(int argc, char *argv[])
                 << "Postal code: " << r.postal_code << "\n"
                 << "Phone: " << r.phone << " / URL: " << r.website << "\n"
                 << r.latitude << ", " << r.longitude << "\n"
-                << r.type << " / " << r.id << " / " << r.admin_levels << " / " << r.levels_resolved
+                << r.type << " / " << r.id << " / " << r.search_rank << " / " << r.levels_resolved
                 << "\n\n";
       counter++;
     }
