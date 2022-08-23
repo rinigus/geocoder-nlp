@@ -99,12 +99,12 @@ bool Geocoder::load(const std::string &dbname)
 
       m_database_open = true;
     }
-  catch (sqlite3pp::database_error e)
+  catch (sqlite3pp::database_error &e)
     {
       error = true;
       std::cerr << "Geocoder SQLite exception: " << e.what() << std::endl;
     }
-  catch (marisa::Exception e)
+  catch (marisa::Exception &e)
     {
       error = true;
       std::cerr << "Geocoder MARISA exception: " << e.what() << std::endl;
@@ -157,7 +157,7 @@ bool Geocoder::check_version(const std::string &supported)
             }
         }
     }
-  catch (sqlite3pp::database_error e)
+  catch (sqlite3pp::database_error &e)
     {
       std::cerr << "Geocoder exception while checking database version: " << e.what() << std::endl;
       return false;
@@ -256,7 +256,7 @@ bool Geocoder::search(const std::vector<Postal::ParseResult> &parsed_query,
             }
         }
     }
-  catch (sqlite3pp::database_error e)
+  catch (sqlite3pp::database_error &e)
     {
       std::cerr << "Geocoder exception: " << e.what() << std::endl;
       return false;
@@ -321,7 +321,7 @@ bool Geocoder::search(const Postal::Hierarchy &parsed, const std::string &postal
   };
 
   std::deque<IntermediateResult> search_result;
-  for (const std::string s : parsed[level])
+  for (const std::string &s : parsed[level])
     {
       marisa::Agent agent;
       agent.set_query(s.c_str());
@@ -710,7 +710,7 @@ bool Geocoder::search_nearby(const std::vector<std::string> &name_query,
           result.push_back(r);
         }
     }
-  catch (sqlite3pp::database_error e)
+  catch (sqlite3pp::database_error &e)
     {
       std::cerr << "Geocoder exception: " << e.what() << std::endl;
       return false;
@@ -932,7 +932,7 @@ bool Geocoder::search_nearby(const std::vector<std::string> &name_query,
           }
         }
     }
-  catch (sqlite3pp::database_error e)
+  catch (sqlite3pp::database_error &e)
     {
       std::cerr << "Geocoder exception: " << e.what() << std::endl;
       return false;

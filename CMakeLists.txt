@@ -22,6 +22,8 @@ pkg_check_modules(POSTAL libpostal IMPORTED_TARGET)
 pkg_check_modules(SQLITE3 sqlite3 IMPORTED_TARGET)
 pkg_check_modules(LIBPQXX libpqxx IMPORTED_TARGET)
 
+add_compile_options(-Wall -Wextra -Werror)
+
 set(SRC
   src/geocoder.cpp
   src/postal.cpp)

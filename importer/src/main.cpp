@@ -183,7 +183,7 @@ select place_id as parent_place_resolved from prec where linked_place_id is null
   // load primary hierarchy
   {
     std::vector<std::string> types_enclosed;
-    for (const auto i : HierarchyItem::get_priority_list())
+    for (const auto &i : HierarchyItem::get_priority_list())
       types_enclosed.push_back("'" + i + "'");
 
     std::string priority_types_condition

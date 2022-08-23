@@ -176,7 +176,7 @@ void normalize_libpostal(sqlite3pp::database &db, std::string address_expansion_
                           num_doubles_dropped++;
                         }
                     }
-                  catch (sqlite3pp::database_error e)
+                  catch (sqlite3pp::database_error &e)
                     {
                       num_doubles_dropped++;
                     }
