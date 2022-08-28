@@ -189,6 +189,12 @@ public:
     std::sort(begin, end, distcomp);
   }
 
+  // search for the segment on a line that is the closest to the
+  // specified point. returns negative value on error
+  static int closest_segment(const std::vector<double> &latitude,
+                             const std::vector<double> &longitude, double reference_latitude,
+                             double reference_longitude);
+
 protected:
   bool search(const Postal::Hierarchy &parsed, const std::string &postal_code,
               std::vector<GeoResult> &result, size_t level = 0, long long int range0 = 0,
@@ -208,12 +214,6 @@ protected:
   bool check_version(const std::string &supported);
 
   void update_limits();
-
-  // search for the segment on a line that is the closest to the
-  // specified point. returns negative value on error
-  static int closest_segment(const std::vector<double> &latitude,
-                             const std::vector<double> &longitude, double reference_latitude,
-                             double reference_longitude);
 
   static double search_rank_location_bias(double distance, int zoom = 16);
 
