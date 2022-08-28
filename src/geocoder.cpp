@@ -39,6 +39,20 @@ Geocoder::GeoReference::GeoReference(double lat, double lon, int zoom, double im
 {
 }
 
+void Geocoder::GeoReference::set(double lat, double lon, int zoom, double importance)
+{
+  m_latitude   = lat;
+  m_longitude  = lon;
+  m_zoom       = zoom;
+  m_importance = importance;
+  m_is_set     = true;
+}
+
+void Geocoder::GeoReference::reset()
+{
+  m_is_set = false;
+}
+
 double Geocoder::GeoReference::distance(const Geocoder::GeoResult &r) const
 {
   point_t ref(m_longitude, m_latitude);

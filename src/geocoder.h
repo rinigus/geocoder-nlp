@@ -49,6 +49,9 @@ public:
     GeoReference();
     GeoReference(double lat, double lon, int zoom = 16, double importance = 0.75);
 
+    void set(double lat, double lon, int zoom = 16, double importance = 0.75);
+    void reset();
+
     bool   is_set() const { return m_is_set; }
     int    zoom() const { return m_zoom; }
     double importance() const { return m_importance; }

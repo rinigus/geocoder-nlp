@@ -69,6 +69,9 @@ add_executable(geocoder-nlp
   ${HEAD})
 
 target_link_libraries(geocoder-nlp
+  ${Boost_LIBRARIES})
+
+target_link_libraries(geocoder-nlp
   PkgConfig::MARISA 
   PkgConfig::KYOTOCABINET
   PkgConfig::POSTAL

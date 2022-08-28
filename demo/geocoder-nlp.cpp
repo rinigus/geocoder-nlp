@@ -1,33 +1,100 @@
 #include "geocoder.h"
 #include "postal.h"
 
+#include <boost/program_options.hpp>
 #include <iomanip>
 #include <iostream>
 
 using namespace GeoNLP;
+namespace po = boost::program_options;
 
 int main(int argc, char *argv[])
 {
   Postal postal;
   // postal.set_initialize_every_call(true);
 
-  if (argc < 5)
-    {
-      std::cout << "Use: " << argv[0] << " dbase postal_global postal_country address\n"
-                << "where\n"
-                << " dbase - path to Geocoder-NLP database folder\n"
-                << " postal_global - path to libpostal database with language classifier\n"
-                << " postal_country - path to libpostal  database covering country\n"
-                << " address - address to be parsed (please enclose it in \" \" to ensure that its "
-                   "a singe argument)\n";
-      return -1;
-    }
+  std::string query;
+  std::string postal_data_global;
+  std::string postal_data_country;
+  std::string geocoder_data;
+  int         max_results = 10;
+  double      ref_latitude;
+  double      ref_longitude;
+  int         ref_zoom       = 16;
+  double      ref_importance = 0.75;
 
-  char                            *query = argv[4];
+  Geocoder::GeoReference reference;
+
+  {
+    po::options_description generic("Geocoder NLP demo options");
+    generic.add_options()("help,h", "Help message");
+    generic.add_options()("geocoder-data", po::value<std::string>(&geocoder_data),
+                          "GeocoderNLP database directory path");
+
+    generic.add_options()(
+        "postal-country", po::value<std::string>(&postal_data_country),
+        "libpostal country database. Keep empty to use global libpostal parser data.");
+    generic.add_options()(
+        "postal-global", po::value<std::string>(&postal_data_global),
+        "libpostal global database. Keep empty to use global libpostal parser data.");
+
+    generic.add_options()("max-results", po::value<int>(&max_results), "Maximal number of results");
+
+    generic.add_options()("ref-latitude", po::value<double>(&ref_latitude),
+                          "Reference for location bias; latitude");
+    generic.add_options()("ref-longitude", po::value<double>(&ref_longitude),
+                          "Reference for location bias; longitude");
+    generic.add_options()(
+        "ref-zoom", po::value<int>(&ref_zoom),
+        "Reference for location bias; zoom level for calculating reference radius");
+    generic.add_options()("ref-importance", po::value<double>(&ref_importance),
+                          "Reference for location bias; importance from 0 to 1 of location bias");
+
+    po::options_description hidden("Hidden options");
+    hidden.add_options()("query", po::value<std::string>(&query), "Search query");
+
+    po::positional_options_description p;
+    p.add("query", 1);
+
+    po::options_description cmdline_options;
+    cmdline_options.add(generic).add(hidden);
+
+    po::variables_map vm;
+    try
+      {
+        po::store(po::command_line_parser(argc, argv).options(cmdline_options).positional(p).run(),
+                  vm);
+        po::notify(vm);
+      }
+    catch (std::exception &e)
+      {
+        std::cerr << "Error while parsing options: " << e.what() << "\n\n";
+        std::cerr << generic << "\n";
+      }
+
+    if (vm.count("help"))
+      {
+        std::cout << "Geocoder NLP demo:\n\n"
+                  << "Call as\n\n " << argv[0] << " <options> query\n"
+                  << "\nwhere query is a string.\n\n"
+                  << generic << "\n";
+        return 0;
+      }
+
+    if (!vm.count("geocoder-data"))
+      {
+        std::cerr << "GeocoderNLP database directory path is missing\n";
+        return -1;
+      }
+
+    if (vm.count("ref-latitude") && vm.count("ref-longitude"))
+      reference.set(ref_latitude, ref_longitude, ref_zoom, ref_importance);
+  }
+
   std::vector<Postal::ParseResult> parsed_query;
   Postal::ParseResult              nonorm;
 
-  postal.set_postal_datadir(argv[2], argv[3]);
+  postal.set_postal_datadir(postal_data_global, postal_data_country);
   // postal.add_language("da");
   // postal.add_language("et");
   // postal.add_language("en");
@@ -61,16 +128,16 @@ int main(int argc, char *argv[])
 
   std::cout << std::endl;
 
-  Geocoder geo(argv[1]);
+  Geocoder geo(geocoder_data);
   geo.set_max_queries_per_hierarchy(30);
-  geo.set_max_results(10);
+  geo.set_max_results(max_results);
   // geo.set_result_language("en");
 
   std::vector<Geocoder::GeoResult> result;
 
   std::cout << "Geocoder loaded" << std::endl;
 
-  geo.search(parsed_query, result);
+  geo.search(parsed_query, result, 0, reference);
 
   std::cout << std::setprecision(8);
   std::cout << "Search results: \n\n";
