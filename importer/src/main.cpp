@@ -157,6 +157,7 @@ int main(int argc, char *argv[])
   pqxx::connection pgc{ postgres_dblink };
   pqxx::work       txn{ pgc };
 
+  // Here, 1000 is used to scale search_rank. Same factor is used in Geocoder::search
   const std::string base_query
       = R"SQL(
 select pl.place_id, linked_place_id, parent_place_resolved as parent_place_id, pl.country_code, class, type,

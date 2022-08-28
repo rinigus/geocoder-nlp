@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
                 << r.address << "\n"
                 << "Postal code: " << r.postal_code << "\n"
                 << "Phone: " << r.phone << " / URL: " << r.website << "\n"
-                << r.latitude << ", " << r.longitude << "\n"
+                << r.latitude << ", " << r.longitude << " / distance=" << r.distance << "\n"
                 << r.type << " / " << r.id << " / " << r.search_rank << " / " << r.levels_resolved
                 << "\n\n";
       counter++;

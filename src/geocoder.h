@@ -23,7 +23,7 @@ public:
     long long int id;
     double        latitude;
     double        longitude;
-    double        distance;
+    double        distance = 0;
     std::string   title;
     std::string   address;
     std::string   type;
@@ -43,6 +43,25 @@ public:
     }
   };
 
+  class GeoReference
+  {
+  public:
+    GeoReference();
+    GeoReference(double lat, double lon, int zoom = 16, double importance = 0.75);
+
+    bool   is_set() const { return m_is_set; }
+    int    zoom() const { return m_zoom; }
+    double importance() const { return m_importance; }
+    double distance(const GeoResult &r) const;
+
+  private:
+    double m_latitude;
+    double m_longitude;
+    double m_importance;
+    int    m_zoom;
+    bool   m_is_set;
+  };
+
   typedef uint32_t index_id_key;
   typedef uint32_t index_id_value;
 
@@ -58,7 +77,7 @@ public:
   /// \brief Search for any objects matching the normalized query
   ///
   bool search(const std::vector<Postal::ParseResult> &parsed_query, std::vector<GeoResult> &result,
-              size_t min_levels = 0);
+              size_t min_levels = 0, const GeoReference &reference = GeoReference());
 
   /// \brief Search for objects within given radius from specified point and matching the query
   ///
@@ -167,12 +186,6 @@ public:
     std::sort(begin, end, distcomp);
   }
 
-  // search for the segment on a line that is the closest to the
-  // specified point. returns negative value on error
-  static int closest_segment(const std::vector<double> &latitude,
-                             const std::vector<double> &longitude, double reference_latitude,
-                             double reference_longitude);
-
 protected:
   bool search(const Postal::Hierarchy &parsed, const std::string &postal_code,
               std::vector<GeoResult> &result, size_t level = 0, long long int range0 = 0,
@@ -192,6 +205,14 @@ protected:
   bool check_version(const std::string &supported);
 
   void update_limits();
+
+  // search for the segment on a line that is the closest to the
+  // specified point. returns negative value on error
+  static int closest_segment(const std::vector<double> &latitude,
+                             const std::vector<double> &longitude, double reference_latitude,
+                             double reference_longitude);
+
+  static double search_rank_location_bias(double distance, int zoom = 16);
 
 protected:
   sqlite3pp::database m_db;
