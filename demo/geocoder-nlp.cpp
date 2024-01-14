@@ -1,5 +1,6 @@
 #include "geocoder.h"
 #include "postal.h"
+#include "version.h"
 
 #include <boost/program_options.hpp>
 #include <iomanip>
@@ -28,6 +29,7 @@ int main(int argc, char *argv[])
   {
     po::options_description generic("Geocoder NLP demo options");
     generic.add_options()("help,h", "Help message");
+    generic.add_options()("version,v", "Version");
     generic.add_options()("geocoder-data", po::value<std::string>(&geocoder_data),
                           "GeocoderNLP database directory path");
 
@@ -78,6 +80,12 @@ int main(int argc, char *argv[])
                   << "Call as\n\n " << argv[0] << " <options> query\n"
                   << "\nwhere query is a string.\n\n"
                   << generic << "\n";
+        return 0;
+      }
+
+    if (vm.count("version"))
+      {
+        std::cout << "Geocoder NLP version: " << GEOCODERNLP_VERSION_STRING << "\n";
         return 0;
       }
 

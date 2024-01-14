@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.6.0)
 
 project(geocoder-nlp
-	VERSION 1.0.0
 	DESCRIPTION "Geocoder NLP")
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
@@ -30,7 +29,8 @@ set(SRC
 
 set(HEAD
   src/geocoder.h
-  src/postal.h)
+  src/postal.h
+  src/version.h)
 
 # sqlite3pp include
 include_directories(thirdparty/sqlite3pp/headeronly_src)

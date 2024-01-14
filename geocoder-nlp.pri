@@ -12,6 +12,7 @@ SOURCES += \
 
 HEADERS += \
     $$PWD/src/postal.h \
-    $$PWD/src/geocoder.h
+    $$PWD/src/geocoder.h \
+    $$PWD/src/version.h
        
 LIBS += -lpostal 
