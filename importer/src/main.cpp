@@ -47,6 +47,7 @@ int main(int argc, char *argv[])
   {
     po::options_description generic("Geocoder NLP importer options");
     generic.add_options()("help,h", "Help message")("version,v", "Version");
+    generic.add_options()("version-data", "Version of the data file");
     generic.add_options()("poly,p", po::value<std::string>(&polyjson),
                           "Boundary of the imported region in GeoJSON format");
     generic.add_options()("postal-country", po::value<std::string>(&postal_country_parser),
@@ -103,6 +104,12 @@ int main(int argc, char *argv[])
       {
         std::cout << "Geocoder NLP version: " << GEOCODERNLP_VERSION_STRING << "\n";
         std::cout << "Data format version: " << GeoNLP::Geocoder::version << "\n";
+        return 0;
+      }
+
+    if (vm.count(("version-data")))
+      {
+        std::cout << GeoNLP::Geocoder::version << "\n";
         return 0;
       }
 
